@@ -131,12 +131,12 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
   - `TaskRepository.cs` implementando `ITaskRepository` (filtros combinables por `status` y `priority`, consulta por `projectId` y vencidas no completadas).
 - [x] **Inyección de dependencias (`DependencyInjection.cs`):**
   - Método de extensión `AddInfrastructure(IConfiguration configuration)` registrando `ApplicationDbContext` con `UseNpgsql`, reintentos automáticos, timeout de 30s y ambos repositorios.
-- [ ] **Migración inicial (`Data/Migrations/`):**
+- [x] **Migración inicial (`Data/Migrations/`):**
   - [x] Generar migración inicial `InitialCreate` para PostgreSQL:
     ```bash
     dotnet ef migrations add InitialCreate --project src/ProTask.Infrastructure --startup-project src/ProTask.API --output-dir Data/Migrations
     ```
-  - [ ] Configurar contraseña local con `dotnet user-secrets` y aplicar la migración en PostgreSQL local:
+  - [x] Configurar contraseña local con `dotnet user-secrets` y aplicar la migración en PostgreSQL local (`protask_dev`):
     ```bash
     dotnet ef database update --project src/ProTask.Infrastructure --startup-project src/ProTask.API
     ```
@@ -178,42 +178,42 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
 - [x] `Controllers/ProjectsControllerTests.cs` y `Controllers/TasksControllerTests.cs`: códigos HTTP esperados (`200`, `201`, `204`).
 - [x] `Integration/ProjectRepositoryTests.cs` y `Integration/TaskRepositoryTests.cs`: consultas reales contra EF Core (SQLite en memoria) validando relación 1:N, cascada, filtros y vencidas.
 - [x] `Functional/ProjectsEndpointsTests.cs`: flujo end-to-end contra la API usando `WebApplicationFactory<Program>` (incluyendo RFC 7807, `/health`, `/openapi/v1.json` y `/swagger/index.html`).
-- [x] Verificación local completa en `Release` (`dotnet build`: 0 errores, 0 advertencias; `dotnet test`: 50/50 pruebas en verde).
+- [x] Verificación local completa en `Release` (`dotnet build`: 0 errores, 0 advertencias; `dotnet test`: 57/57 pruebas en verde).
 
 ---
 
 ## Fase 7 — Repositorio en GitHub
 
-- [ ] Crear repositorio en GitHub (público o con acceso para evaluadores).
-- [ ] Conectar remoto y subir la rama `main`:
+- [x] Crear repositorio en GitHub (`https://github.com/jose2520/ProTask`).
+- [x] Conectar remoto `origin` a `https://github.com/jose2520/ProTask.git`.
+- [ ] Subir los últimos commits de la rama `main`:
   ```bash
-  git remote add origin https://github.com/<tu-usuario>/<tu-repo>.git
   git push -u origin main
   ```
-- [ ] Verificar que **no** se hayan subido contraseñas ni cadenas de conexión reales (usar GitHub Secrets y Azure App Settings).
+- [x] Verificar que **no** se hayan subido contraseñas ni cadenas de conexión reales (escaneo de código limpio; usar `dotnet user-secrets`, GitHub Secrets y Azure App Settings).
 
 ---
 
-## Fase 8 — Infraestructura en Azure (API + Base de Datos)
+## Fase 8 — Infraestructura en Azure (API + PostgreSQL) *(diferida por ahora)*
 
 - [ ] Crear un **Resource Group** en Azure (ej. `rg-protask`).
 - [ ] Crear la **base de datos relacional en Azure**:
-  - **Azure SQL Server + Azure SQL Database** *(o Azure Database for PostgreSQL Flexible Server)*.
-  - Configurar reglas de firewall permitiendo acceso a servicios de Azure (*Allow Azure services and resources to access this server*).
+  - **Azure Database for PostgreSQL Flexible Server**.
+  - Configurar reglas de firewall permitiendo acceso a servicios de Azure (*Allow public access from any Azure service within Azure to this server*).
 - [ ] Crear **Azure App Service** (Web App en Linux con runtime **.NET 10**).
 - [ ] Configurar en el App Service → **Environment variables / Connection strings**:
-  - `ConnectionStrings__DefaultConnection` con la cadena de conexión de Azure SQL / PostgreSQL.
-  - `ASPNETCORE_ENVIRONMENT=Production` *(y bandera si deseas habilitar Swagger en producción)*.
-- [ ] Aplicar las migraciones de EF Core sobre la base de datos en Azure (desde el pipeline o manualmente antes del primer arranque).
+  - `ConnectionStrings__DefaultConnection` con la cadena de conexión de PostgreSQL en Azure.
+  - `ASPNETCORE_ENVIRONMENT=Production` y `Swagger__Enabled=true` *(para exponer Swagger en la URL entregada)*.
+- [ ] Aplicar las migraciones de EF Core sobre PostgreSQL en Azure (desde el pipeline o manualmente antes del primer arranque).
 - [ ] Descargar el **Publish Profile** del App Service (o configurar OpenID Connect / Service Principal) para GitHub Actions.
 
 ---
 
-## Fase 9 — CI/CD con GitHub Actions
+## Fase 9 — CI/CD con GitHub Actions *(diferida por ahora)*
 
 - [ ] Guardar el secreto en GitHub → *Settings → Secrets and variables → Actions*:
   - `AZURE_WEBAPP_PUBLISH_PROFILE` *(o credenciales OIDC de Azure)*.
-  - Opcional: `AZURE_SQL_CONNECTION_STRING` si el workflow aplica migraciones automáticamente.
+  - Opcional: `POSTGRES_CONNECTION_STRING` si el workflow aplica migraciones automáticamente.
 - [ ] Crear el archivo `.github/workflows/ci-cd.yml` con dos jobs en cadena:
   1. **Job `build-and-test`** (se ejecuta en `push` y `pull_request` a `main`):
      - `actions/checkout@v4`
@@ -230,12 +230,12 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
 
 ---
 
-## Fase 10 — Verificación Final y Entregables
+## Fase 10 — Verificación Final y Entregables *(diferida por ahora)*
 
 - [ ] Probar todos los endpoints directamente en **Swagger UI en Azure** (`https://<tu-app>.azurewebsites.net/swagger`):
-  - Crear proyecto → crear tareas (pendiente, completada, vencida) → consultar tareas por proyecto → filtrar por estado y prioridad → consultar vencidas → verificar `%` de avance → intentar borrar proyecto con tarea pendiente (verificar bloqueo) → cambiar estado a completada → borrar proyecto.
+  - Crear proyecto → crear tareas (pendiente, completada, vencida) → consultar tareas por proyecto → filtrar por estado y prioridad → consultar vencidas → verificar `%` de avance → intentar borrar proyecto con tarea pendiente o en progreso (verificar bloqueo `409`) → cambiar estado a completada → borrar proyecto.
 - [ ] Actualizar la sección **Entregables** en [README.md](./README.md) con:
-  - [ ] URL del repositorio de GitHub.
+  - [x] URL del repositorio de GitHub (`https://github.com/jose2520/ProTask`).
   - [ ] URL de la API desplegada y URL de Swagger en Azure.
   - [ ] Evidencia del pipeline de CI/CD en GitHub Actions (enlace a la ejecución exitosa y/o capturas de pantalla).
 - [ ] Hacer el commit final actualizando `README.md` y comprobar que el pipeline vuelva a pasar en verde.

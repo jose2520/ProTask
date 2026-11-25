@@ -16,9 +16,11 @@ public sealed class UpdateTaskItemValidator : AbstractValidator<UpdateTaskItemDt
             .When(x => x.Description is not null);
 
         RuleFor(x => x.Status)
+            .NotNull().WithMessage("El estado es obligatorio.")
             .IsInEnum().WithMessage("El estado especificado no es válido.");
 
         RuleFor(x => x.Priority)
+            .NotNull().WithMessage("La prioridad es obligatoria.")
             .IsInEnum().WithMessage("La prioridad especificada no es válida.");
 
         RuleFor(x => x.DueDate)

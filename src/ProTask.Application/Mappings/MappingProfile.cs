@@ -2,6 +2,7 @@ using ProTask.Application.DTOs.Projects;
 using ProTask.Application.DTOs.Tasks;
 using ProTask.Domain.Entities;
 using ProTask.Domain.Enums;
+using ProTask.Domain.Exceptions;
 
 namespace ProTask.Application.Mappings;
 
@@ -85,10 +86,20 @@ public static class MappingProfile
         ArgumentNullException.ThrowIfNull(task);
         ArgumentNullException.ThrowIfNull(dto);
 
+        if (!dto.Status.HasValue)
+        {
+            throw new BusinessRuleException("El estado es obligatorio.", "missing_task_status");
+        }
+
+        if (!dto.Priority.HasValue)
+        {
+            throw new BusinessRuleException("La prioridad es obligatoria.", "missing_task_priority");
+        }
+
         task.Title = dto.Title.Trim();
         task.Description = NormalizeOptionalText(dto.Description);
-        task.ChangeStatus(dto.Status);
-        task.Priority = dto.Priority;
+        task.ChangeStatus(dto.Status.Value);
+        task.Priority = dto.Priority.Value;
         task.DueDate = Project.NormalizeToUtc(dto.DueDate);
     }
 

@@ -8,6 +8,7 @@ public sealed class UpdateTaskStatusValidator : AbstractValidator<UpdateTaskStat
     public UpdateTaskStatusValidator()
     {
         RuleFor(x => x.Status)
+            .NotNull().WithMessage("El estado es obligatorio.")
             .IsInEnum().WithMessage("El estado especificado no es válido.");
     }
 }

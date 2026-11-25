@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using ProTask.Domain.Entities;
 using ProTask.Domain.Enums;
+using ProTask.Domain.Exceptions;
 using ProTask.Infrastructure.Data;
 using ProTask.Infrastructure.Repositories;
 using Xunit;
@@ -97,5 +98,69 @@ public sealed class ProjectRepositoryTests : IAsyncLifetime
 
         Assert.False(await _sut.ExistsAsync(project.Id));
         Assert.Empty(await _context.Tasks.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(TaskItemStatus.Pendiente)]
+    [InlineData(TaskItemStatus.EnProgreso)]
+    public async Task DeleteIfNoIncompleteTasksAsync_WithIncompleteTask_ThrowsAndRollsBackTransaction(TaskItemStatus status)
+    {
+        var project = await _sut.AddAsync(new Project
+        {
+            Name = "Proyecto protegido atómicamente",
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddDays(5),
+            Tasks =
+            [
+                new TaskItem
+                {
+                    Title = "Activa",
+                    Status = status,
+                    Priority = TaskPriority.Alta,
+                    DueDate = DateTime.UtcNow.AddDays(2)
+                }
+            ]
+        });
+
+        _context.ChangeTracker.Clear();
+
+        await Assert.ThrowsAsync<BusinessRuleException>(() => _sut.DeleteIfNoIncompleteTasksAsync(project.Id));
+
+        Assert.True(await _sut.ExistsAsync(project.Id));
+        Assert.Single(await _context.Tasks.ToListAsync());
+    }
+
+    [Fact]
+    public async Task DeleteIfNoIncompleteTasksAsync_WithOnlyCompletedTasks_DeletesProjectAndCascades()
+    {
+        var project = await _sut.AddAsync(new Project
+        {
+            Name = "Proyecto listo para eliminar",
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddDays(5),
+            Tasks =
+            [
+                new TaskItem
+                {
+                    Title = "Completada",
+                    Status = TaskItemStatus.Completada,
+                    Priority = TaskPriority.Media,
+                    DueDate = DateTime.UtcNow.AddDays(1)
+                }
+            ]
+        });
+
+        _context.ChangeTracker.Clear();
+
+        await _sut.DeleteIfNoIncompleteTasksAsync(project.Id);
+
+        Assert.False(await _sut.ExistsAsync(project.Id));
+        Assert.Empty(await _context.Tasks.ToListAsync());
+    }
+
+    [Fact]
+    public async Task DeleteIfNoIncompleteTasksAsync_WhenProjectMissing_ThrowsNotFoundException()
+    {
+        await Assert.ThrowsAsync<NotFoundException>(() => _sut.DeleteIfNoIncompleteTasksAsync(9999));
     }
 }

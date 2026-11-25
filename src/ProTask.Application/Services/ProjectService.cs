@@ -62,10 +62,6 @@ public sealed class ProjectService : IProjectService
 
     public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var project = await _projectRepository.GetByIdWithTasksAsync(id, cancellationToken)
-            ?? throw new NotFoundException("el proyecto", id);
-
-        project.EnsureCanBeDeleted();
-        await _projectRepository.DeleteAsync(project, cancellationToken);
+        await _projectRepository.DeleteIfNoIncompleteTasksAsync(id, cancellationToken);
     }
 }

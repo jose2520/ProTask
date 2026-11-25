@@ -29,7 +29,7 @@ public static class DependencyInjection
                 npgsqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
                     maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorCodesToAdd: null);
+                    errorCodesToAdd: ["40001"]);
                 npgsqlOptions.CommandTimeout(30);
             }));
 

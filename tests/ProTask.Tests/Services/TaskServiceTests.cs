@@ -171,6 +171,30 @@ public sealed class TaskServiceTests
     }
 
     [Fact]
+    public async Task UpdateStatusAsync_WhenStatusIsMissing_ThrowsValidationException()
+    {
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            _sut.UpdateStatusAsync(4, new UpdateTaskStatusDto { Status = null }));
+
+        _taskRepositoryMock.Verify(repo => repo.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenStatusOrPriorityIsMissing_ThrowsValidationException()
+    {
+        var dto = new UpdateTaskItemDto
+        {
+            Title = "Sin enums",
+            Status = null,
+            Priority = null,
+            DueDate = FixedUtcNow.UtcDateTime.AddDays(1)
+        };
+
+        await Assert.ThrowsAsync<ValidationException>(() => _sut.UpdateAsync(4, dto));
+        _taskRepositoryMock.Verify(repo => repo.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task DeleteAsync_WhenTaskMissing_ThrowsNotFoundException()
     {
         _taskRepositoryMock

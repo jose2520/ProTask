@@ -134,7 +134,7 @@ public sealed class TaskService : ITaskService
         var task = await _taskRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new NotFoundException("la tarea", id);
 
-        task.ChangeStatus(dto.Status);
+        task.ChangeStatus(dto.Status!.Value);
         await _taskRepository.UpdateAsync(task, cancellationToken);
 
         var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;

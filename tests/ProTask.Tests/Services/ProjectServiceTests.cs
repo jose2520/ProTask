@@ -142,42 +142,32 @@ public sealed class ProjectServiceTests
         _projectRepositoryMock.Verify(repo => repo.UpdateAsync(existing, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Theory]
-    [InlineData(TaskItemStatus.Pendiente)]
-    [InlineData(TaskItemStatus.EnProgreso)]
-    public async Task DeleteAsync_WhenProjectHasIncompleteTasks_ThrowsBusinessRuleException(TaskItemStatus status)
+    [Fact]
+    public async Task DeleteAsync_WhenRepositoryThrowsBusinessRuleException_PropagatesException()
     {
-        var project = new Project
-        {
-            Id = 5,
-            Name = "Con tareas activas",
-            Tasks = [new TaskItem { Id = 1, Status = status }]
-        };
-
         _projectRepositoryMock
-            .Setup(repo => repo.GetByIdWithTasksAsync(5, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(project);
+            .Setup(repo => repo.DeleteIfNoIncompleteTasksAsync(5, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new BusinessRuleException("Proyecto con tareas activas", "project_has_incomplete_tasks"));
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => _sut.DeleteAsync(5));
-        _projectRepositoryMock.Verify(repo => repo.DeleteAsync(It.IsAny<Project>(), It.IsAny<CancellationToken>()), Times.Never);
+        _projectRepositoryMock.Verify(repo => repo.DeleteIfNoIncompleteTasksAsync(5, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task DeleteAsync_WhenAllTasksCompleted_DeletesProject()
+    public async Task DeleteAsync_WhenProjectNotFound_PropagatesNotFoundException()
     {
-        var project = new Project
-        {
-            Id = 6,
-            Name = "Completado",
-            Tasks = [new TaskItem { Id = 1, Status = TaskItemStatus.Completada }]
-        };
-
         _projectRepositoryMock
-            .Setup(repo => repo.GetByIdWithTasksAsync(6, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(project);
+            .Setup(repo => repo.DeleteIfNoIncompleteTasksAsync(404, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new NotFoundException("el proyecto", 404));
 
+        await Assert.ThrowsAsync<NotFoundException>(() => _sut.DeleteAsync(404));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_DelegatesToAtomicRepositoryDelete()
+    {
         await _sut.DeleteAsync(6);
 
-        _projectRepositoryMock.Verify(repo => repo.DeleteAsync(project, It.IsAny<CancellationToken>()), Times.Once);
+        _projectRepositoryMock.Verify(repo => repo.DeleteIfNoIncompleteTasksAsync(6, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

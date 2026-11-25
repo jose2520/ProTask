@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Hosting;
@@ -271,6 +272,56 @@ public sealed class ProjectsEndpointsTests : IAsyncLifetime
 
         var getDeletedTask = await _client.GetAsync($"/api/tasks/{task.Id}");
         Assert.Equal(HttpStatusCode.NotFound, getDeletedTask.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateEndpoints_WithOmittedEnumFields_ReturnBadRequestWithoutCorruptingTask()
+    {
+        var createProject = await _client.PostAsJsonAsync("/api/projects", new CreateProjectDto
+        {
+            Name = "Protección de enums",
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddDays(10)
+        });
+        var project = await createProject.Content.ReadFromJsonAsync<ProjectDto>(JsonOptions);
+        Assert.NotNull(project);
+
+        var createTask = await _client.PostAsJsonAsync("/api/tasks", new CreateTaskItemDto
+        {
+            Title = "Tarea crítica",
+            Priority = TaskPriority.Critica,
+            DueDate = DateTime.UtcNow.AddDays(3),
+            ProjectId = project.Id
+        });
+        var task = await createTask.Content.ReadFromJsonAsync<TaskItemDto>(JsonOptions);
+        Assert.NotNull(task);
+
+        var completeResp = await _client.PatchAsJsonAsync(
+            $"/api/tasks/{task.Id}/status",
+            new UpdateTaskStatusDto { Status = TaskItemStatus.Completada });
+        Assert.Equal(HttpStatusCode.OK, completeResp.StatusCode);
+
+        using var emptyPatchContent = new StringContent("{}", Encoding.UTF8, "application/json");
+        var emptyPatchResp = await _client.PatchAsync($"/api/tasks/{task.Id}/status", emptyPatchContent);
+        Assert.Equal(HttpStatusCode.BadRequest, emptyPatchResp.StatusCode);
+        Assert.Equal("application/problem+json", emptyPatchResp.Content.Headers.ContentType?.MediaType);
+
+        using var typoPatchContent = new StringContent("{\"estado\":\"EnProgreso\"}", Encoding.UTF8, "application/json");
+        var typoPatchResp = await _client.PatchAsync($"/api/tasks/{task.Id}/status", typoPatchContent);
+        Assert.Equal(HttpStatusCode.BadRequest, typoPatchResp.StatusCode);
+
+        using var missingEnumsPutContent = new StringContent(
+            "{\"title\":\"Intento parcial\",\"dueDate\":\"2026-12-10T00:00:00Z\"}",
+            Encoding.UTF8,
+            "application/json");
+        var missingEnumsPutResp = await _client.PutAsync($"/api/tasks/{task.Id}", missingEnumsPutContent);
+        Assert.Equal(HttpStatusCode.BadRequest, missingEnumsPutResp.StatusCode);
+
+        var intactTask = await _client.GetFromJsonAsync<TaskItemDto>($"/api/tasks/{task.Id}", JsonOptions);
+        Assert.NotNull(intactTask);
+        Assert.Equal(TaskItemStatus.Completada, intactTask.Status);
+        Assert.Equal(TaskPriority.Critica, intactTask.Priority);
+        Assert.Equal("Tarea crítica", intactTask.Title);
     }
 
     [Fact]
