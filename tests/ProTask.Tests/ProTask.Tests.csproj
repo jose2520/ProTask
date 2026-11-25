@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\ProTask.API\ProTask.API.csproj" />
+        <ProjectReference Include="..\..\src\ProTask.Application\ProTask.Application.csproj" />
+        <ProjectReference Include="..\..\src\ProTask.Domain\ProTask.Domain.csproj" />
+        <ProjectReference Include="..\..\src\ProTask.Infrastructure\ProTask.Infrastructure.csproj" />
+    </ItemGroup>
+
+</Project>
