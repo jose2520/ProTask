@@ -152,8 +152,8 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
 - [x] **Controladores delgados (*thin controllers*):**
   - `Controllers/ProjectsController.cs`: `GET`, `GET /{id}`, `GET /{id}/tasks`, `POST`, `PUT /{id}`, `DELETE /{id}`.
   - `Controllers/TasksController.cs`: `GET ?status=&priority=`, `GET /overdue`, `GET /{id}`, `POST`, `PUT /{id}`, `PATCH /{id}/status`, `DELETE /{id}`.
-- [x] **Configurar `Program.cs`:**
-  - Eliminado `/weatherforecast`, registrados `AddControllers()` con `JsonStringEnumConverter`, `AddApplication()`, `AddInfrastructure()`, OpenAPI + Swagger UI en `/swagger`, `ExceptionHandlingMiddleware`, `/health` y `public partial class Program { }`.
+- [x] **Configurar `Program.cs` y Health Checks:**
+  - Eliminado `/weatherforecast`, registrados `AddControllers()` y `ConfigureHttpJsonOptions` con `JsonStringEnumConverter`, `AddApplication()`, `AddInfrastructure()`, OpenAPI (`SchemaTransformer` para enums en texto) + Swagger UI en `/swagger`, `ExceptionHandlingMiddleware`, `Health/DatabaseHealthCheck.cs` en `/health` (JSON con chequeo real de PostgreSQL), `/health/live` y `public partial class Program { }`.
 
 ---
 
@@ -179,11 +179,11 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
   - `Fixtures/PostgreSqlFixture.cs` e `InfrastructureCollection.cs`
   - `Data/MigrationTests.cs` y `DependencyInjectionTests.cs`
   - `Repositories/ProjectRepositoryTests.cs` y `TaskRepositoryTests.cs`
-- [x] **`ProTask.API.Tests`** (21 pruebas: 11 `Unit` + 10 `Integration` contra `protask_api_test`):
+- [x] **`ProTask.API.Tests`** (22 pruebas: 11 `Unit` + 11 `Integration` contra `protask_api_test`):
   - `Controllers/ProjectsControllerTests.cs` y `TasksControllerTests.cs`
   - `Fixtures/ApiPostgreSqlFixture.cs`, `ProTaskApiFactory.cs` y `ApiCollection.cs`
   - `Endpoints/ProjectsEndpointsTests.cs`, `TasksEndpointsTests.cs` y `OpenApiTests.cs`
-- [x] Verificación local completa en `Release` (`dotnet build -p:TreatWarningsAsErrors=true`: 0 errores, 0 advertencias; `dotnet test ProTask.slnx`: **95/95 pruebas** en paralelo).
+- [x] Verificación local completa en `Release` (`dotnet build -p:TreatWarningsAsErrors=true`: 0 errores, 0 advertencias; `dotnet test ProTask.slnx`: **96/96 pruebas** en paralelo).
 
 ---
 

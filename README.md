@@ -1,4 +1,14 @@
-# ProTask API
+<p align="center">
+  <img src="docs/assets/protask-banner.svg" alt="ProTask API Banner" width="100%" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/.NET-10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 10" />
+  <img src="https://img.shields.io/badge/PostgreSQL-EF%20Core%2010-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Architecture-Clean%20Architecture-0EA5E9?style=for-the-badge" alt="Clean Architecture" />
+  <img src="https://img.shields.io/badge/OpenAPI-Swagger%20UI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger UI" />
+  <img src="https://img.shields.io/badge/Tests-96%20passing-10B981?style=for-the-badge&logo=xunit&logoColor=white" alt="Tests 96 passing" />
+</p>
 
 API REST para la gestión de proyectos y sus respectivas tareas, construida bajo Clean Architecture en **.NET 10** con **PostgreSQL** (Entity Framework Core / Npgsql).
 
@@ -69,9 +79,27 @@ Desarrollar una API REST que permita gestionar proyectos y sus respectivas tarea
 
 ### Diagnóstico y Documentación
 
-- **Health check:** `GET /health`
-- **Especificación OpenAPI:** `GET /openapi/v1.json`
+- **Health check (PostgreSQL + JSON detallado):** `GET /health`
+- **Liveness probe (ligero, sin BD):** `GET /health/live`
+- **Especificación OpenAPI (enums en texto):** `GET /openapi/v1.json`
 - **Swagger UI:** `GET /swagger`
+
+Ejemplo de respuesta de `GET /health`:
+
+```json
+{
+  "status": "Healthy",
+  "totalDurationMs": 12.45,
+  "checks": [
+    {
+      "name": "postgresql",
+      "status": "Healthy",
+      "description": "Conexión exitosa a PostgreSQL.",
+      "durationMs": 11.82
+    }
+  ]
+}
+```
 
 ---
 
@@ -93,11 +121,11 @@ Desarrollar una API REST que permita gestionar proyectos y sus respectivas tarea
 - [x] **Base de datos relacional:** Persistencia configurada con **PostgreSQL** (`Npgsql.EntityFrameworkCore.PostgreSQL`), Entity Framework Core 10 y migración inicial `InitialCreate`.
 - [x] **Documentación con Swagger:** OpenAPI (`/openapi/v1.json`) e interfaz interactiva de Swagger UI (`/swagger`).
 - [x] **Control de versiones en GitHub:** Repositorio configurado con historial de commits y `.gitignore` para `.NET`.
-- [x] **Pruebas automatizadas:** 95 pruebas organizadas en espejo 1 a 1 con `src/` (`Category=Unit` y `Category=Integration`):
+- [x] **Pruebas automatizadas:** 96 pruebas organizadas en espejo 1 a 1 con `src/` (`Category=Unit` y `Category=Integration`):
   - `ProTask.Domain.Tests` (**15 pruebas** unitarias puras de entidades).
   - `ProTask.Application.Tests` (**44 pruebas** unitarias de servicios, validadores y mapeos).
   - `ProTask.Infrastructure.Tests` (**15 pruebas**: 2 DI + 13 de integración contra PostgreSQL real en `protask_infra_test`).
-  - `ProTask.API.Tests` (**21 pruebas**: 11 unitarias de controladores + 10 de integración HTTP contra PostgreSQL real en `protask_api_test`).
+  - `ProTask.API.Tests` (**22 pruebas**: 11 unitarias de controladores + 11 de integración HTTP contra PostgreSQL real en `protask_api_test`).
 - [ ] **Despliegue en Azure:** Publicación de la API (Azure App Service) y base de datos PostgreSQL en Microsoft Azure *(pendiente para fase posterior)*.
 - [ ] **CI/CD con GitHub Actions:** Pipeline automatizado (`dotnet build`, `dotnet test` y despliegue automático) *(pendiente para fase posterior)*.
 
@@ -110,11 +138,14 @@ ProTask/
 ├── ProTask.slnx
 ├── README.md
 ├── PLAN_IMPLEMENTACION.md
+├── docs/
+│   └── assets/
+│       └── protask-banner.svg    # Banner vectorial del README
 ├── src/
 │   ├── ProTask.Domain/           # Entidades, enums, excepciones e interfaces de dominio (0 paquetes externos)
 │   ├── ProTask.Application/      # DTOs, validadores FluentValidation, mapeo manual y servicios
 │   ├── ProTask.Infrastructure/   # DbContext, configuraciones Fluent API, migraciones PostgreSQL y repositorios
-│   └── ProTask.API/              # Controladores, middleware RFC 7807, OpenAPI/Swagger y Program.cs
+│   └── ProTask.API/              # Controladores, middleware RFC 7807, health checks, OpenAPI/Swagger y Program.cs
 └── tests/
     ├── ProTask.Domain.Tests/         # Pruebas unitarias de ProTask.Domain (Entities)
     ├── ProTask.Application.Tests/    # Pruebas unitarias de ProTask.Application (Services, Validators, Mappings)
@@ -161,9 +192,9 @@ Cada proyecto en `tests/` espeja 1 a 1 su capa equivalente en `src/` y cada clas
 | `ProTask.Infrastructure.Tests` | `DependencyInjectionTests.cs` | `Unit` | 2 | No |
 | `ProTask.Infrastructure.Tests` | `Data/`, `Repositories/` | `Integration` | 13 | PostgreSQL (`protask_infra_test`) |
 | `ProTask.API.Tests` | `Controllers/` | `Unit` | 11 | No (`Moq`) |
-| `ProTask.API.Tests` | `Endpoints/` | `Integration` | 10 | PostgreSQL (`protask_api_test`) |
+| `ProTask.API.Tests` | `Endpoints/` | `Integration` | 11 | PostgreSQL (`protask_api_test`) |
 
-- **Total:** **95 casos** (**72 `Unit`** + **23 `Integration`**).
+- **Total:** **96 casos** (**72 `Unit`** + **24 `Integration`**).
 - Las pruebas de integración toman automáticamente la conexión desde `PROTASK_TEST_CONNECTION` (o tus `user-secrets` de `ProTask.API`) y siempre apuntan a bases terminadas en `_test`, protegiendo `protask_dev`.
 
 ### Comandos para ejecutarlas

@@ -1,0 +1,203 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 250" width="1200" height="250" role="img" aria-label="ProTask API — Clean Architecture, .NET 10, PostgreSQL">
+  <defs>
+    <!-- Base dark-navy background gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090F1D" />
+      <stop offset="55%" stop-color="#0F1B30" />
+      <stop offset="100%" stop-color="#11223A" />
+    </linearGradient>
+
+    <!-- Subtle outer border gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.45" />
+      <stop offset="50%" stop-color="#38BDF8" stop-opacity="0.22" />
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0.5" />
+    </linearGradient>
+
+    <!-- Brand accent gradient -->
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="55%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#8B5CF6" />
+    </linearGradient>
+
+    <!-- Ambient glows -->
+    <radialGradient id="glowPurple" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7C3AED" stop-opacity="0.32" />
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glowCyan" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.26" />
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Isometric layer fills & strokes -->
+    <linearGradient id="layerTopFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.26" />
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0.16" />
+    </linearGradient>
+    <linearGradient id="layerTopStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A78BFA" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+
+    <linearGradient id="layerMidFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.20" />
+      <stop offset="100%" stop-color="#0EA5E9" stop-opacity="0.12" />
+    </linearGradient>
+    <linearGradient id="layerMidStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0.85" />
+    </linearGradient>
+
+    <linearGradient id="layerBotStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0.65" />
+    </linearGradient>
+
+    <!-- Subtle blueprint dot grid -->
+    <pattern id="dotGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#94A3B8" fill-opacity="0.10" />
+    </pattern>
+
+    <!-- Icon badge glass fill -->
+    <linearGradient id="badgeFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#0F172A" stop-opacity="0.95" />
+    </linearGradient>
+
+    <!-- Clip rounded card -->
+    <clipPath id="cardClip">
+      <rect x="0" y="0" width="1200" height="250" rx="16" />
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#cardClip)">
+    <!-- Background & dot grid -->
+    <rect width="1200" height="250" fill="url(#bgGrad)" />
+    <rect width="1200" height="250" fill="url(#dotGrid)" />
+
+    <!-- Ambient glow orbs -->
+    <ellipse cx="900" cy="95" rx="230" ry="125" fill="url(#glowPurple)" />
+    <ellipse cx="975" cy="185" rx="240" ry="120" fill="url(#glowCyan)" />
+    <ellipse cx="140" cy="120" rx="180" ry="110" fill="url(#glowPurple)" opacity="0.5" />
+
+    <!-- Subtle inner border -->
+    <rect x="12" y="12" width="1176" height="226" rx="12" fill="none" stroke="url(#borderGrad)" stroke-width="1.5" />
+
+    <!-- ==================== LEFT SIDE: COMPACT HORIZONTAL BRANDING ==================== -->
+    <g transform="translate(56, 36)">
+      <!-- App Icon Badge aligned beside title -->
+      <rect x="0" y="16" width="64" height="64" rx="15" fill="url(#badgeFill)" stroke="url(#layerTopStroke)" stroke-width="1.5" />
+      <g transform="translate(0, 16)" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5">
+        <path d="M16 41 L32 49 L48 41" stroke="#6366F1" />
+        <path d="M16 33 L32 41 L48 33" stroke="#38BDF8" />
+        <path d="M16 25 L32 17 L48 25 L32 33 Z" stroke="url(#accentGrad)" fill="#38BDF8" fill-opacity="0.12" />
+        <path d="M26 24.5 L30.5 28.5 L41 18" stroke="#E0F2FE" stroke-width="2.6" />
+      </g>
+
+      <!-- Title, accent bar, subtitle & pills -->
+      <g transform="translate(86, 0)">
+        <text x="0" y="64"
+              font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Inter, Roboto, Helvetica, Arial, sans-serif"
+              font-size="54" font-weight="800" letter-spacing="-1.4" fill="#F8FAFC">
+          ProTask API
+        </text>
+
+        <rect x="2" y="79" width="80" height="3.5" rx="1.75" fill="url(#accentGrad)" />
+
+        <text x="2" y="112"
+              font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Inter, Roboto, Helvetica, Arial, sans-serif"
+              font-size="19" font-weight="500" letter-spacing="0.2" fill="#94A3B8">
+          Clean Architecture · .NET 10 · PostgreSQL
+        </text>
+
+        <!-- Compact feature pills -->
+        <g transform="translate(0, 134)"
+           font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Inter, Roboto, Helvetica, Arial, sans-serif"
+           font-size="12.5" font-weight="600">
+          <rect x="0" y="0" width="104" height="28" rx="14" fill="#0F172A" fill-opacity="0.85" stroke="#38BDF8" stroke-opacity="0.35" stroke-width="1" />
+          <circle cx="16" cy="14" r="3.5" fill="#38BDF8" />
+          <text x="27" y="18.2" fill="#E2E8F0">REST API</text>
+
+          <rect x="114" y="0" width="108" height="28" rx="14" fill="#0F172A" fill-opacity="0.85" stroke="#818CF8" stroke-opacity="0.35" stroke-width="1" />
+          <circle cx="130" cy="14" r="3.5" fill="#818CF8" />
+          <text x="141" y="18.2" fill="#E2E8F0">RFC 7807</text>
+
+          <rect x="232" y="0" width="122" height="28" rx="14" fill="#0F172A" fill-opacity="0.85" stroke="#34D399" stroke-opacity="0.35" stroke-width="1" />
+          <circle cx="248" cy="14" r="3.5" fill="#34D399" />
+          <text x="259" y="18.2" fill="#E2E8F0">Swagger UI</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- ==================== RIGHT SIDE: COMPACT CLEAN ARCHITECTURE VISUAL ==================== -->
+    <g transform="translate(750, 18)">
+      <!-- Vertical circuit traces -->
+      <g stroke="#38BDF8" stroke-opacity="0.30" stroke-width="1.2" fill="none" stroke-linecap="round">
+        <path d="M138 14 L138 42" />
+        <path d="M154 8 L154 38" />
+        <path d="M170 16 L170 46" />
+        <path d="M104 180 L104 202 L86 212" />
+        <path d="M124 188 L124 208 L108 216" />
+        <path d="M26 58 L26 168" stroke="#818CF8" stroke-opacity="0.35" />
+      </g>
+      <circle cx="138" cy="14" r="2.2" fill="#38BDF8" opacity="0.7" />
+      <circle cx="154" cy="8" r="2.2" fill="#A78BFA" opacity="0.85" />
+      <circle cx="170" cy="16" r="2.2" fill="#38BDF8" opacity="0.7" />
+      <circle cx="26" cy="168" r="3" fill="#38BDF8" />
+      <circle cx="26" cy="58" r="2.2" fill="#A78BFA" />
+
+      <!-- Mini telemetry indicator lines -->
+      <g transform="translate(8, 22)">
+        <circle cx="5" cy="6" r="2.5" fill="#38BDF8" />
+        <rect x="14" y="3.5" width="38" height="4.5" rx="2.25" fill="#64748B" opacity="0.55" />
+        <circle cx="5" cy="19" r="2.5" fill="#818CF8" />
+        <rect x="14" y="16.5" width="28" height="4.5" rx="2.25" fill="#64748B" opacity="0.4" />
+        <circle cx="5" cy="32" r="2.5" fill="#34D399" />
+        <rect x="14" y="29.5" width="20" height="4.5" rx="2.25" fill="#64748B" opacity="0.3" />
+      </g>
+
+      <!-- Layer 4 (Bottom — Domain) -->
+      <path d="M154 128 L244 164 L154 200 L64 164 Z"
+            fill="url(#layerMidFill)" stroke="url(#layerBotStroke)" stroke-width="1.8" stroke-linejoin="round" />
+
+      <!-- Layer 3 (Application) -->
+      <path d="M154 100 L244 136 L154 172 L64 136 Z"
+            fill="url(#layerMidFill)" stroke="url(#layerMidStroke)" stroke-width="1.8" stroke-linejoin="round" />
+
+      <!-- Layer 2 (Infrastructure) -->
+      <path d="M154 72 L244 108 L154 144 L64 108 Z"
+            fill="url(#layerMidFill)" stroke="url(#layerMidStroke)" stroke-width="1.8" stroke-linejoin="round" />
+
+      <!-- Layer 1 (Top — API) -->
+      <path d="M154 44 L244 80 L154 116 L64 80 Z"
+            fill="url(#layerTopFill)" stroke="url(#layerTopStroke)" stroke-width="2.2" stroke-linejoin="round" />
+
+      <!-- Glossy inner diamond on top layer -->
+      <path d="M154 56 L218 82 L154 108 L90 82 Z"
+            fill="none" stroke="#E0F2FE" stroke-opacity="0.22" stroke-width="1.1" />
+
+      <!-- Floating progress pill & task checkmarks -->
+      <g transform="translate(274, 34)">
+        <rect x="0" y="0" width="84" height="14" rx="7" fill="#0F172A" fill-opacity="0.82" stroke="#38BDF8" stroke-opacity="0.45" stroke-width="1.2" />
+        <rect x="3.5" y="3.5" width="54" height="7" rx="3.5" fill="url(#accentGrad)" />
+
+        <g transform="translate(26, 30)">
+          <rect x="0" y="0" width="32" height="32" rx="8.5" fill="#0F172A" fill-opacity="0.78" stroke="#38BDF8" stroke-opacity="0.45" stroke-width="1.3" />
+          <path d="M9 16.5 L14 21 L23 11.5" fill="none" stroke="#38BDF8" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+        </g>
+
+        <g transform="translate(26, 74)">
+          <rect x="0" y="0" width="32" height="32" rx="8.5" fill="#0F172A" fill-opacity="0.78" stroke="#818CF8" stroke-opacity="0.5" stroke-width="1.3" />
+          <path d="M9 16.5 L14 21 L23 11.5" fill="none" stroke="#A78BFA" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+        </g>
+
+        <g transform="translate(26, 118)">
+          <rect x="0" y="0" width="32" height="32" rx="8.5" fill="#0F172A" fill-opacity="0.68" stroke="#34D399" stroke-opacity="0.45" stroke-width="1.3" />
+          <path d="M9 16.5 L14 21 L23 11.5" fill="none" stroke="#34D399" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

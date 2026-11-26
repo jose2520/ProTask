@@ -19,9 +19,24 @@ public sealed class OpenApiTests : IDisposable
     public void Dispose() => _client.Dispose();
 
     [Fact]
-    public async Task HealthEndpoint_ReturnsHealthy()
+    public async Task HealthEndpoint_ChecksPostgreSqlAndReturnsStructuredJson()
     {
         var response = await _client.GetAsync("/health");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("Healthy", document.RootElement.GetProperty("status").GetString());
+
+        var checks = document.RootElement.GetProperty("checks").EnumerateArray().ToList();
+        var postgresCheck = Assert.Single(checks, c => c.GetProperty("name").GetString() == "postgresql");
+        Assert.Equal("Healthy", postgresCheck.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task HealthLiveEndpoint_ReturnsHealthy()
+    {
+        var response = await _client.GetAsync("/health/live");
         var body = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -37,7 +52,7 @@ public sealed class OpenApiTests : IDisposable
     }
 
     [Fact]
-    public async Task OpenApiDocument_ExposesAllExpectedPathsAndSchemas()
+    public async Task OpenApiDocument_ExposesExpectedPathsAndStringEnumSchemas()
     {
         var response = await _client.GetAsync("/openapi/v1.json");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -64,7 +79,15 @@ public sealed class OpenApiTests : IDisposable
 
         Assert.True(schemas.TryGetProperty("ProjectDto", out _));
         Assert.True(schemas.TryGetProperty("TaskItemDto", out _));
-        Assert.True(schemas.TryGetProperty("TaskItemStatus", out _));
-        Assert.True(schemas.TryGetProperty("TaskPriority", out _));
+
+        var statusSchema = schemas.GetProperty("TaskItemStatus");
+        Assert.Equal("string", statusSchema.GetProperty("type").GetString());
+        var statusValues = statusSchema.GetProperty("enum").EnumerateArray().Select(e => e.GetString() ?? string.Empty).ToArray();
+        Assert.Equal(["Pendiente", "EnProgreso", "Completada"], statusValues);
+
+        var prioritySchema = schemas.GetProperty("TaskPriority");
+        Assert.Equal("string", prioritySchema.GetProperty("type").GetString());
+        var priorityValues = prioritySchema.GetProperty("enum").EnumerateArray().Select(e => e.GetString() ?? string.Empty).ToArray();
+        Assert.Equal(["Baja", "Media", "Alta", "Critica"], priorityValues);
     }
 }
