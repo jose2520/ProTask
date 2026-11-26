@@ -93,7 +93,11 @@ Desarrollar una API REST que permita gestionar proyectos y sus respectivas tarea
 - [x] **Base de datos relacional:** Persistencia configurada con **PostgreSQL** (`Npgsql.EntityFrameworkCore.PostgreSQL`), Entity Framework Core 10 y migración inicial `InitialCreate`.
 - [x] **Documentación con Swagger:** OpenAPI (`/openapi/v1.json`) e interfaz interactiva de Swagger UI (`/swagger`).
 - [x] **Control de versiones en GitHub:** Repositorio configurado con historial de commits y `.gitignore` para `.NET`.
-- [x] **Pruebas automatizadas:** 57 pruebas (unitarias, integración con SQLite en memoria y funcionales E2E con `WebApplicationFactory<Program>`).
+- [x] **Pruebas automatizadas:** 95 pruebas organizadas en espejo 1 a 1 con `src/` (`Category=Unit` y `Category=Integration`):
+  - `ProTask.Domain.Tests` (**15 pruebas** unitarias puras de entidades).
+  - `ProTask.Application.Tests` (**44 pruebas** unitarias de servicios, validadores y mapeos).
+  - `ProTask.Infrastructure.Tests` (**15 pruebas**: 2 DI + 13 de integración contra PostgreSQL real en `protask_infra_test`).
+  - `ProTask.API.Tests` (**21 pruebas**: 11 unitarias de controladores + 10 de integración HTTP contra PostgreSQL real en `protask_api_test`).
 - [ ] **Despliegue en Azure:** Publicación de la API (Azure App Service) y base de datos PostgreSQL en Microsoft Azure *(pendiente para fase posterior)*.
 - [ ] **CI/CD con GitHub Actions:** Pipeline automatizado (`dotnet build`, `dotnet test` y despliegue automático) *(pendiente para fase posterior)*.
 
@@ -112,7 +116,10 @@ ProTask/
 │   ├── ProTask.Infrastructure/   # DbContext, configuraciones Fluent API, migraciones PostgreSQL y repositorios
 │   └── ProTask.API/              # Controladores, middleware RFC 7807, OpenAPI/Swagger y Program.cs
 └── tests/
-    └── ProTask.Tests/            # Pruebas unitarias, de integración (SQLite) y funcionales E2E
+    ├── ProTask.Domain.Tests/         # Pruebas unitarias de ProTask.Domain (Entities)
+    ├── ProTask.Application.Tests/    # Pruebas unitarias de ProTask.Application (Services, Validators, Mappings)
+    ├── ProTask.Infrastructure.Tests/ # Pruebas de integración PostgreSQL (Data, Repositories, DI)
+    └── ProTask.API.Tests/            # Pruebas de controladores (Unit) + endpoints HTTP / OpenAPI (Integration)
 ```
 
 ---
@@ -136,11 +143,49 @@ dotnet ef database update --project src/ProTask.Infrastructure --startup-project
 
 ```bash
 dotnet build ProTask.slnx --configuration Release
-dotnet test ProTask.slnx --configuration Release --no-build
 dotnet run --project src/ProTask.API
 ```
 
 Swagger UI quedará disponible en `http://localhost:5184/swagger`.
+
+---
+
+## Pruebas Automatizadas (Unitarias vs. Integración)
+
+Cada proyecto en `tests/` espeja 1 a 1 su capa equivalente en `src/` y cada clase lleva el atributo `[Trait("Category", "Unit")]` o `[Trait("Category", "Integration")]`:
+
+| Proyecto | Carpetas / Archivos | Categoría | Casos | Base de datos |
+| :--- | :--- | :---: | :---: | :--- |
+| `ProTask.Domain.Tests` | `Entities/` | `Unit` | 15 | No |
+| `ProTask.Application.Tests` | `Services/`, `Validators/`, `Mappings/` | `Unit` | 44 | No (`Moq`) |
+| `ProTask.Infrastructure.Tests` | `DependencyInjectionTests.cs` | `Unit` | 2 | No |
+| `ProTask.Infrastructure.Tests` | `Data/`, `Repositories/` | `Integration` | 13 | PostgreSQL (`protask_infra_test`) |
+| `ProTask.API.Tests` | `Controllers/` | `Unit` | 11 | No (`Moq`) |
+| `ProTask.API.Tests` | `Endpoints/` | `Integration` | 10 | PostgreSQL (`protask_api_test`) |
+
+- **Total:** **95 casos** (**72 `Unit`** + **23 `Integration`**).
+- Las pruebas de integración toman automáticamente la conexión desde `PROTASK_TEST_CONNECTION` (o tus `user-secrets` de `ProTask.API`) y siempre apuntan a bases terminadas en `_test`, protegiendo `protask_dev`.
+
+### Comandos para ejecutarlas
+
+```bash
+# Solo pruebas unitarias (rápidas, sin PostgreSQL)
+dotnet test ProTask.slnx --configuration Release --no-build --filter Category=Unit
+
+# Solo pruebas de integración (contra PostgreSQL real)
+dotnet test ProTask.slnx --configuration Release --no-build --filter Category=Integration
+
+# Por proyecto específico
+dotnet test tests/ProTask.Domain.Tests
+dotnet test tests/ProTask.Application.Tests
+dotnet test tests/ProTask.Infrastructure.Tests
+dotnet test tests/ProTask.API.Tests
+
+# Todas las pruebas en paralelo
+dotnet test ProTask.slnx --configuration Release --no-build
+```
+
+> En **JetBrains Rider**, puedes abrir la ventana **Unit Tests** y activar **Group by → Categories** para ver separadas visualmente las carpetas `Unit` e `Integration`.
 
 ---
 

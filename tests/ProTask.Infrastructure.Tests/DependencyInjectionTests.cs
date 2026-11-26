@@ -10,8 +10,9 @@ using ProTask.Infrastructure;
 using ProTask.Infrastructure.Data;
 using Xunit;
 
-namespace ProTask.Tests.Services;
+namespace ProTask.Infrastructure.Tests;
 
+[Trait("Category", "Unit")]
 public sealed class DependencyInjectionTests
 {
     [Fact]

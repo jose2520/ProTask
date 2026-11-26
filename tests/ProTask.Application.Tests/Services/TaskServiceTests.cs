@@ -9,8 +9,9 @@ using ProTask.Domain.Exceptions;
 using ProTask.Domain.Interfaces;
 using Xunit;
 
-namespace ProTask.Tests.Services;
+namespace ProTask.Application.Tests.Services;
 
+[Trait("Category", "Unit")]
 public sealed class TaskServiceTests
 {
     private static readonly DateTimeOffset FixedUtcNow = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);

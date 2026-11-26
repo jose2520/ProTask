@@ -6,6 +6,9 @@
     <Project Path="src/ProTask.Infrastructure/ProTask.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/ProTask.Tests/ProTask.Tests.csproj" />
+    <Project Path="tests/ProTask.API.Tests/ProTask.API.Tests.csproj" />
+    <Project Path="tests/ProTask.Application.Tests/ProTask.Application.Tests.csproj" />
+    <Project Path="tests/ProTask.Domain.Tests/ProTask.Domain.Tests.csproj" />
+    <Project Path="tests/ProTask.Infrastructure.Tests/ProTask.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

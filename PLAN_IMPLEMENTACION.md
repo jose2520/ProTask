@@ -1,4 +1,4 @@
-# Plan de Implementación — ProTask API
+aplicar lo mas recomendado # Plan de Implementación — ProTask API
 
 Guía paso a paso para completar el proyecto **ProTask API** desde la estructura Clean Architecture actual hasta el despliegue en Azure con CI/CD en GitHub Actions.
 
@@ -49,13 +49,11 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
 - [x] **`ProTask.API`**:
   - `Microsoft.AspNetCore.OpenApi` + `Swashbuckle.AspNetCore.SwaggerUI` (exponiendo `/swagger` desde `/openapi/v1.json`)
   - `Microsoft.EntityFrameworkCore.Design` *(necesario para ejecutar `dotnet ef migrations`)*
-- [x] **`ProTask.Tests`**:
-  - `Microsoft.NET.Test.Sdk`
-  - `xunit`
-  - `xunit.runner.visualstudio`
-  - `Moq`
-  - `Microsoft.AspNetCore.Mvc.Testing` *(para pruebas funcionales de endpoints)*
-  - `Microsoft.EntityFrameworkCore.Sqlite` *(para pruebas de integración y funcionales con SQLite en memoria)*
+- [x] **Proyectos de pruebas en espejo 1 a 1 con `src/`:**
+  - `ProTask.Domain.Tests`: `Microsoft.NET.Test.Sdk`, `xunit`, `xunit.runner.visualstudio` *(solo referencia `ProTask.Domain`)*.
+  - `ProTask.Application.Tests`: `Microsoft.NET.Test.Sdk`, `xunit`, `xunit.runner.visualstudio`, `Moq`, `FluentValidation`.
+  - `ProTask.Infrastructure.Tests`: `Microsoft.NET.Test.Sdk`, `xunit`, `xunit.runner.visualstudio` *(contra PostgreSQL real en `protask_infra_test`)*.
+  - `ProTask.API.Tests`: `Microsoft.NET.Test.Sdk`, `xunit`, `xunit.runner.visualstudio`, `Moq`, `Microsoft.AspNetCore.Mvc.Testing` *(controladores + HTTP E2E contra `protask_api_test`)*.
 
 ---
 
@@ -159,7 +157,7 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
 
 ---
 
-## Fase 6 — Pruebas Automatizadas (`tests/ProTask.Tests`)
+## Fase 6 — Pruebas Automatizadas (Espejo 1 a 1 en `tests/`)
 
 ### Casos críticos que deben quedar cubiertos sí o sí
 1. Proyecto sin tareas devuelve **0%** de avance (sin error de división por cero).
@@ -170,15 +168,22 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
 6. Filtrar tareas por `status`, por `priority` y por ambos combinados devuelve solo coincidencias.
 7. Crear proyecto con `EndDate < StartDate` o tarea con `ProjectId` inexistente devuelve `400` / `404` controlado.
 
-### Archivos de pruebas implementados
-- [x] `Services/DomainEntityTests.cs`: reglas de `Project` (`ProgressPercentage`, tareas incompletas, normalización UTC) y `TaskItem` (vencimiento, cambio de estado).
-- [x] `Services/ProjectServiceTests.cs`: CRUD, cálculo de avance, bloqueo de borrado y `NotFoundException`.
-- [x] `Services/TaskServiceTests.cs`: CRUD, filtros, tareas vencidas, cambio de estado y proyecto inexistente.
-- [x] `Services/DependencyInjectionTests.cs`: verificación del contenedor DI para servicios, validadores y repositorios.
-- [x] `Controllers/ProjectsControllerTests.cs` y `Controllers/TasksControllerTests.cs`: códigos HTTP esperados (`200`, `201`, `204`).
-- [x] `Integration/ProjectRepositoryTests.cs` y `Integration/TaskRepositoryTests.cs`: consultas reales contra EF Core (SQLite en memoria) validando relación 1:N, cascada, filtros y vencidas.
-- [x] `Functional/ProjectsEndpointsTests.cs`: flujo end-to-end contra la API usando `WebApplicationFactory<Program>` (incluyendo RFC 7807, `/health`, `/openapi/v1.json` y `/swagger/index.html`).
-- [x] Verificación local completa en `Release` (`dotnet build`: 0 errores, 0 advertencias; `dotnet test`: 57/57 pruebas en verde).
+### Proyectos y archivos de pruebas implementados
+- [x] **`ProTask.Domain.Tests`** (15 pruebas `Unit`):
+  - `Entities/ProjectTests.cs` y `Entities/TaskItemTests.cs`
+- [x] **`ProTask.Application.Tests`** (44 pruebas `Unit`):
+  - `Services/ProjectServiceTests.cs` y `TaskServiceTests.cs`
+  - `Validators/` (5 archivos: uno por cada validador FluentValidation)
+  - `Mappings/MappingProfileTests.cs`
+- [x] **`ProTask.Infrastructure.Tests`** (15 pruebas: 2 `Unit` + 13 `Integration` contra `protask_infra_test`):
+  - `Fixtures/PostgreSqlFixture.cs` e `InfrastructureCollection.cs`
+  - `Data/MigrationTests.cs` y `DependencyInjectionTests.cs`
+  - `Repositories/ProjectRepositoryTests.cs` y `TaskRepositoryTests.cs`
+- [x] **`ProTask.API.Tests`** (21 pruebas: 11 `Unit` + 10 `Integration` contra `protask_api_test`):
+  - `Controllers/ProjectsControllerTests.cs` y `TasksControllerTests.cs`
+  - `Fixtures/ApiPostgreSqlFixture.cs`, `ProTaskApiFactory.cs` y `ApiCollection.cs`
+  - `Endpoints/ProjectsEndpointsTests.cs`, `TasksEndpointsTests.cs` y `OpenApiTests.cs`
+- [x] Verificación local completa en `Release` (`dotnet build -p:TreatWarningsAsErrors=true`: 0 errores, 0 advertencias; `dotnet test ProTask.slnx`: **95/95 pruebas** en paralelo).
 
 ---
 

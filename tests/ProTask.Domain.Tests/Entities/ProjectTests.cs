@@ -3,9 +3,10 @@ using ProTask.Domain.Enums;
 using ProTask.Domain.Exceptions;
 using Xunit;
 
-namespace ProTask.Tests.Services;
+namespace ProTask.Domain.Tests.Entities;
 
-public sealed class DomainEntityTests
+[Trait("Category", "Unit")]
+public sealed class ProjectTests
 {
     [Fact]
     public void CalculateProgressPercentage_WithoutTasks_ReturnsZero()
@@ -56,6 +57,23 @@ public sealed class DomainEntityTests
         Assert.Equal(33.33d, project.CalculateProgressPercentage());
     }
 
+    [Fact]
+    public void CalculateProgressPercentage_WithAllTasksCompleted_ReturnsHundred()
+    {
+        var project = new Project
+        {
+            Id = 1,
+            Name = "Proyecto terminado",
+            Tasks =
+            [
+                new TaskItem { Status = TaskItemStatus.Completada },
+                new TaskItem { Status = TaskItemStatus.Completada }
+            ]
+        };
+
+        Assert.Equal(100d, project.CalculateProgressPercentage());
+    }
+
     [Theory]
     [InlineData(TaskItemStatus.Pendiente)]
     [InlineData(TaskItemStatus.EnProgreso)]
@@ -69,7 +87,8 @@ public sealed class DomainEntityTests
         };
 
         Assert.True(project.HasIncompleteTasks());
-        Assert.Throws<BusinessRuleException>(() => project.EnsureCanBeDeleted());
+        var exception = Assert.Throws<BusinessRuleException>(() => project.EnsureCanBeDeleted());
+        Assert.Equal("project_has_incomplete_tasks", exception.ErrorCode);
     }
 
     [Fact]
@@ -111,42 +130,17 @@ public sealed class DomainEntityTests
 
         Assert.Equal(DateTimeKind.Utc, project.StartDate.Kind);
         Assert.Equal(DateTimeKind.Utc, project.EndDate.Kind);
+        Assert.Equal(9, project.StartDate.Hour);
     }
 
     [Fact]
-    public void TaskItem_IsOverdue_EvaluatesStatusAndDueDateCorrectly()
+    public void NormalizeToUtc_ConvertsLocalTimeToUtc()
     {
-        var nowUtc = new DateTime(2026, 11, 25, 12, 0, 0, DateTimeKind.Utc);
+        var local = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Local);
 
-        var overduePending = new TaskItem
-        {
-            Status = TaskItemStatus.Pendiente,
-            DueDate = nowUtc.AddHours(-1)
-        };
-        var overdueCompleted = new TaskItem
-        {
-            Status = TaskItemStatus.Completada,
-            DueDate = nowUtc.AddDays(-5)
-        };
-        var futurePending = new TaskItem
-        {
-            Status = TaskItemStatus.Pendiente,
-            DueDate = nowUtc.AddHours(1)
-        };
+        var normalized = Project.NormalizeToUtc(local);
 
-        Assert.True(overduePending.IsOverdue(nowUtc));
-        Assert.False(overdueCompleted.IsOverdue(nowUtc));
-        Assert.False(futurePending.IsOverdue(nowUtc));
-    }
-
-    [Fact]
-    public void TaskItem_ChangeStatus_ValidatesEnum()
-    {
-        var task = new TaskItem { Status = TaskItemStatus.Pendiente };
-
-        task.ChangeStatus(TaskItemStatus.EnProgreso);
-        Assert.Equal(TaskItemStatus.EnProgreso, task.Status);
-
-        Assert.Throws<BusinessRuleException>(() => task.ChangeStatus((TaskItemStatus)999));
+        Assert.Equal(DateTimeKind.Utc, normalized.Kind);
+        Assert.Equal(local.ToUniversalTime(), normalized);
     }
 }

@@ -1,43 +1,34 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using ProTask.Domain.Entities;
 using ProTask.Domain.Enums;
 using ProTask.Domain.Exceptions;
-using ProTask.Infrastructure.Data;
 using ProTask.Infrastructure.Repositories;
+using ProTask.Infrastructure.Tests.Fixtures;
 using Xunit;
 
-namespace ProTask.Tests.Integration;
+namespace ProTask.Infrastructure.Tests.Repositories;
 
+[Collection(InfrastructureCollection.Name)]
+[Trait("Category", "Integration")]
 public sealed class ProjectRepositoryTests : IAsyncLifetime
 {
-    private SqliteConnection _connection = null!;
-    private ApplicationDbContext _context = null!;
-    private ProjectRepository _sut = null!;
+    private readonly PostgreSqlFixture _fixture;
 
-    public async Task InitializeAsync()
+    public ProjectRepositoryTests(PostgreSqlFixture fixture)
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        await _connection.OpenAsync();
-
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        _context = new ApplicationDbContext(options);
-        await _context.Database.EnsureCreatedAsync();
-        _sut = new ProjectRepository(_context);
+        _fixture = fixture;
     }
 
-    public async Task DisposeAsync()
-    {
-        await _context.DisposeAsync();
-        await _connection.DisposeAsync();
-    }
+    public Task InitializeAsync() => _fixture.ResetDatabaseAsync();
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task AddAndGetByIdWithTasksAsync_PersistsRelationOneToMany()
     {
+        await using var context = _fixture.CreateDbContext();
+        var sut = new ProjectRepository(context);
+
         var project = new Project
         {
             Name = "Backend PostgreSQL",
@@ -63,10 +54,10 @@ public sealed class ProjectRepositoryTests : IAsyncLifetime
             ]
         };
 
-        var created = await _sut.AddAsync(project);
-        _context.ChangeTracker.Clear();
+        var created = await sut.AddAsync(project);
+        context.ChangeTracker.Clear();
 
-        var loaded = await _sut.GetByIdWithTasksAsync(created.Id);
+        var loaded = await sut.GetByIdWithTasksAsync(created.Id);
 
         Assert.NotNull(loaded);
         Assert.Equal("Backend PostgreSQL", loaded.Name);
@@ -75,39 +66,38 @@ public sealed class ProjectRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task DeleteAsync_CascadesCompletedTasksAndRemovesProject()
+    public async Task UpdateAsync_UpdatesTrackedProjectWithoutError()
     {
-        var project = await _sut.AddAsync(new Project
+        await using var context = _fixture.CreateDbContext();
+        var sut = new ProjectRepository(context);
+
+        var created = await sut.AddAsync(new Project
         {
-            Name = "Proyecto borrable",
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddDays(5),
-            Tasks =
-            [
-                new TaskItem
-                {
-                    Title = "Terminada",
-                    Status = TaskItemStatus.Completada,
-                    Priority = TaskPriority.Baja,
-                    DueDate = DateTime.UtcNow.AddDays(1)
-                }
-            ]
+            Name = "Original",
+            StartDate = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc)
         });
 
-        await _sut.DeleteAsync(project);
+        created.Name = "Actualizado";
+        await sut.UpdateAsync(created);
+        context.ChangeTracker.Clear();
 
-        Assert.False(await _sut.ExistsAsync(project.Id));
-        Assert.Empty(await _context.Tasks.ToListAsync());
+        var reloaded = await sut.GetByIdAsync(created.Id);
+        Assert.NotNull(reloaded);
+        Assert.Equal("Actualizado", reloaded.Name);
     }
 
     [Theory]
     [InlineData(TaskItemStatus.Pendiente)]
     [InlineData(TaskItemStatus.EnProgreso)]
-    public async Task DeleteIfNoIncompleteTasksAsync_WithIncompleteTask_ThrowsAndRollsBackTransaction(TaskItemStatus status)
+    public async Task DeleteIfNoIncompleteTasksAsync_WithIncompleteTask_ThrowsAndKeepsDataIntact(TaskItemStatus status)
     {
-        var project = await _sut.AddAsync(new Project
+        await using var context = _fixture.CreateDbContext();
+        var sut = new ProjectRepository(context);
+
+        var project = await sut.AddAsync(new Project
         {
-            Name = "Proyecto protegido atómicamente",
+            Name = "Proyecto protegido",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(5),
             Tasks =
@@ -122,20 +112,23 @@ public sealed class ProjectRepositoryTests : IAsyncLifetime
             ]
         });
 
-        _context.ChangeTracker.Clear();
+        context.ChangeTracker.Clear();
 
-        await Assert.ThrowsAsync<BusinessRuleException>(() => _sut.DeleteIfNoIncompleteTasksAsync(project.Id));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => sut.DeleteIfNoIncompleteTasksAsync(project.Id));
 
-        Assert.True(await _sut.ExistsAsync(project.Id));
-        Assert.Single(await _context.Tasks.ToListAsync());
+        Assert.True(await sut.ExistsAsync(project.Id));
+        Assert.Single(await context.Tasks.AsNoTracking().ToListAsync());
     }
 
     [Fact]
     public async Task DeleteIfNoIncompleteTasksAsync_WithOnlyCompletedTasks_DeletesProjectAndCascades()
     {
-        var project = await _sut.AddAsync(new Project
+        await using var context = _fixture.CreateDbContext();
+        var sut = new ProjectRepository(context);
+
+        var project = await sut.AddAsync(new Project
         {
-            Name = "Proyecto listo para eliminar",
+            Name = "Proyecto eliminable",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(5),
             Tasks =
@@ -150,17 +143,20 @@ public sealed class ProjectRepositoryTests : IAsyncLifetime
             ]
         });
 
-        _context.ChangeTracker.Clear();
+        context.ChangeTracker.Clear();
 
-        await _sut.DeleteIfNoIncompleteTasksAsync(project.Id);
+        await sut.DeleteIfNoIncompleteTasksAsync(project.Id);
 
-        Assert.False(await _sut.ExistsAsync(project.Id));
-        Assert.Empty(await _context.Tasks.ToListAsync());
+        Assert.False(await sut.ExistsAsync(project.Id));
+        Assert.Empty(await context.Tasks.AsNoTracking().ToListAsync());
     }
 
     [Fact]
     public async Task DeleteIfNoIncompleteTasksAsync_WhenProjectMissing_ThrowsNotFoundException()
     {
-        await Assert.ThrowsAsync<NotFoundException>(() => _sut.DeleteIfNoIncompleteTasksAsync(9999));
+        await using var context = _fixture.CreateDbContext();
+        var sut = new ProjectRepository(context);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => sut.DeleteIfNoIncompleteTasksAsync(9999));
     }
 }

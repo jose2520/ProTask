@@ -6,8 +6,9 @@ using ProTask.Application.Interfaces;
 using ProTask.Domain.Enums;
 using Xunit;
 
-namespace ProTask.Tests.Controllers;
+namespace ProTask.API.Tests.Controllers;
 
+[Trait("Category", "Unit")]
 public sealed class TasksControllerTests
 {
     private readonly Mock<ITaskService> _taskServiceMock = new();

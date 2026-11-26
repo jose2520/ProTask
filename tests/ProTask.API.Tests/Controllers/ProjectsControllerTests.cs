@@ -6,8 +6,9 @@ using ProTask.Application.DTOs.Tasks;
 using ProTask.Application.Interfaces;
 using Xunit;
 
-namespace ProTask.Tests.Controllers;
+namespace ProTask.API.Tests.Controllers;
 
+[Trait("Category", "Unit")]
 public sealed class ProjectsControllerTests
 {
     private readonly Mock<IProjectService> _projectServiceMock = new();

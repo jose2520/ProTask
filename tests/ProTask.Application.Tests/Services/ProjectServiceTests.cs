@@ -9,8 +9,9 @@ using ProTask.Domain.Exceptions;
 using ProTask.Domain.Interfaces;
 using Xunit;
 
-namespace ProTask.Tests.Services;
+namespace ProTask.Application.Tests.Services;
 
+[Trait("Category", "Unit")]
 public sealed class ProjectServiceTests
 {
     private readonly Mock<IProjectRepository> _projectRepositoryMock = new();
