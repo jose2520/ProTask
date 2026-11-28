@@ -1,13 +1,12 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using ProTask.Infrastructure.Data;
 
-namespace ProTask.API.Health;
+namespace ProTask.Infrastructure.Persistence;
 
 public sealed class DatabaseHealthCheck : IHealthCheck
 {
-    private readonly ApplicationDbContext _dbContext;
+    private readonly AppDbContext _dbContext;
 
-    public DatabaseHealthCheck(ApplicationDbContext dbContext)
+    public DatabaseHealthCheck(AppDbContext dbContext)
     {
         _dbContext = dbContext;
     }

@@ -1,9 +1,10 @@
 using System.Text.Json;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using ProTask.Application.Exceptions;
 using ProTask.Domain.Exceptions;
 
-namespace ProTask.API.Middlewares;
+namespace ProTask.API.Middleware;
 
 public sealed class ExceptionHandlingMiddleware
 {

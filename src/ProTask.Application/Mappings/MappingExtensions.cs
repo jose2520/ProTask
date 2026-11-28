@@ -6,7 +6,7 @@ using ProTask.Domain.Exceptions;
 
 namespace ProTask.Application.Mappings;
 
-public static class MappingProfile
+public static class MappingExtensions
 {
     public static ProjectDto ToDto(this Project project)
     {
@@ -29,14 +29,7 @@ public static class MappingProfile
     {
         ArgumentNullException.ThrowIfNull(dto);
 
-        var project = new Project
-        {
-            Name = dto.Name.Trim(),
-            Description = NormalizeOptionalText(dto.Description)
-        };
-
-        project.UpdateDates(dto.StartDate, dto.EndDate);
-        return project;
+        return Project.Create(dto.Name, dto.Description, dto.StartDate, dto.EndDate);
     }
 
     public static void ApplyUpdate(this Project project, UpdateProjectDto dto)
@@ -44,9 +37,7 @@ public static class MappingProfile
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(dto);
 
-        project.Name = dto.Name.Trim();
-        project.Description = NormalizeOptionalText(dto.Description);
-        project.UpdateDates(dto.StartDate, dto.EndDate);
+        project.UpdateDetails(dto.Name, dto.Description, dto.StartDate, dto.EndDate);
     }
 
     public static TaskItemDto ToDto(this TaskItem task, DateTime referenceUtc)
@@ -70,15 +61,13 @@ public static class MappingProfile
     {
         ArgumentNullException.ThrowIfNull(dto);
 
-        return new TaskItem
-        {
-            Title = dto.Title.Trim(),
-            Description = NormalizeOptionalText(dto.Description),
-            Status = TaskItemStatus.Pendiente,
-            Priority = dto.Priority,
-            DueDate = Project.NormalizeToUtc(dto.DueDate),
-            ProjectId = dto.ProjectId
-        };
+        return TaskItem.Create(
+            dto.Title,
+            dto.Description,
+            dto.Priority,
+            dto.DueDate,
+            dto.ProjectId,
+            TaskItemStatus.Pendiente);
     }
 
     public static void ApplyUpdate(this TaskItem task, UpdateTaskItemDto dto)
@@ -96,13 +85,11 @@ public static class MappingProfile
             throw new BusinessRuleException("La prioridad es obligatoria.", "missing_task_priority");
         }
 
-        task.Title = dto.Title.Trim();
-        task.Description = NormalizeOptionalText(dto.Description);
-        task.ChangeStatus(dto.Status.Value);
-        task.Priority = dto.Priority.Value;
-        task.DueDate = Project.NormalizeToUtc(dto.DueDate);
+        task.UpdateDetails(
+            dto.Title,
+            dto.Description,
+            dto.Status.Value,
+            dto.Priority.Value,
+            dto.DueDate);
     }
-
-    private static string? NormalizeOptionalText(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

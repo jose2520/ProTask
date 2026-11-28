@@ -1,4 +1,4 @@
-aplicar lo mas recomendado # Plan de Implementación — ProTask API
+# Plan de Implementación — ProTask API
 
 Guía paso a paso para completar el proyecto **ProTask API** desde la estructura Clean Architecture actual hasta el despliegue en Azure con CI/CD en GitHub Actions.
 
@@ -64,9 +64,8 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
 - [x] **Enums:**
   - `Enums/TaskItemStatus.cs`: `Pendiente`, `EnProgreso`, `Completada`.
   - `Enums/TaskPriority.cs`: `Baja`, `Media`, `Alta`, `Critica`.
-- [x] **Excepciones de dominio** (crear en `src/ProTask.Domain/Exceptions/`):
+- [x] **Excepciones de dominio** (en `src/ProTask.Domain/Exceptions/`):
   - `DomainException.cs` (base)
-  - `NotFoundException.cs` (recurso no encontrado → HTTP `404`)
   - `BusinessRuleException.cs` (violación de regla de negocio, ej. eliminar proyecto con tareas pendientes o en progreso → HTTP `409`)
 - [x] **Entidades y relación 1:N:**
   - `Entities/Project.cs`:
@@ -75,9 +74,9 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
   - `Entities/TaskItem.cs`:
     - Propiedades: `Id`, `Title`, `Description`, `Status` (por defecto `Pendiente`), `Priority`, `DueDate`, `ProjectId`, navegación `Project`.
     - Lógica de dominio: método para cambiar estado y método para saber si está vencida (`DueDate < DateTime.UtcNow && Status != TaskItemStatus.Completada`).
-- [x] **Contratos de repositorios:**
-  - `Interfaces/IProjectRepository.cs`: `GetAllAsync`, `GetByIdAsync`, `GetByIdWithTasksAsync`, `AddAsync`, `UpdateAsync`, `DeleteAsync`, `ExistsAsync`.
-  - `Interfaces/ITaskRepository.cs`: `GetAllAsync`, `GetByIdAsync`, `GetByProjectIdAsync`, `GetFilteredAsync(status?, priority?)`, `GetOverdueIncompleteAsync(DateTime referenceUtc)`, `AddAsync`, `UpdateAsync`, `DeleteAsync`.
+- [x] **Contratos de repositorios (`Abstractions/`):**
+  - `Abstractions/IProjectRepository.cs`: `GetAllAsync`, `GetByIdAsync`, `GetByIdWithTasksAsync`, `AddAsync`, `UpdateAsync`, `DeleteAsync`, `DeleteIfNoIncompleteTasksAsync`, `ExistsAsync`.
+  - `Abstractions/ITaskRepository.cs`: `GetAllAsync`, `GetByIdAsync`, `GetByProjectIdAsync`, `GetFilteredAsync(status?, priority?)`, `GetOverdueIncompleteAsync(DateTime referenceUtc)`, `AddAsync`, `UpdateAsync`, `DeleteAsync`.
 
 ---
 
@@ -98,7 +97,9 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
   - `CreateTaskItemValidator.cs`: título requerido, `ProjectId > 0`, `Priority` válida, `DueDate` válida.
   - `UpdateTaskItemValidator.cs`: título requerido, `Status` y `Priority` válidas, `DueDate` válida.
   - `UpdateTaskStatusValidator.cs`: validar que `Status` pertenezca al enum `TaskItemStatus`.
-- [x] **Mapeos (`Mappings/MappingProfile.cs`):**
+- [x] **Excepciones de aplicación (`Exceptions/`):**
+  - `NotFoundException.cs` (recurso no encontrado en casos de uso → HTTP `404`).
+- [x] **Mapeos (`Mappings/MappingExtensions.cs`):**
   - Mapeo manual por métodos de extensión entre `Project` ↔ `ProjectDto`, `CreateProjectDto`, `UpdateProjectDto` y `TaskItem` ↔ `TaskItemDto`, `CreateTaskItemDto`, `UpdateTaskItemDto`.
 - [x] **Interfaces y Servicios (`Interfaces/` y `Services/`):**
   - `IProjectService.cs` y `ProjectService.cs`:
@@ -118,21 +119,21 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
 
 ## Fase 4 — Capa de Infraestructura (`src/ProTask.Infrastructure`)
 
-- [x] **DbContext (`Data/ApplicationDbContext.cs`):**
+- [x] **DbContext (`Persistence/AppDbContext.cs`):**
   - Definir `DbSet<Project> Projects` y `DbSet<TaskItem> Tasks`.
   - Aplicar configuraciones automáticamente con `modelBuilder.ApplyConfigurationsFromAssembly(...)`.
-- [x] **Configuraciones Fluent API (`Data/Configurations/`):**
+- [x] **Configuraciones Fluent API (`Persistence/Configurations/`):**
   - `ProjectConfiguration.cs`: tabla `projects`, clave primaria, longitudes máximas, campos requeridos y relación `HasMany(p => p.Tasks).WithOne(t => t.Project).HasForeignKey(t => t.ProjectId).OnDelete(DeleteBehavior.Cascade)`.
   - `TaskItemConfiguration.cs`: tabla `tasks`, clave primaria, longitudes, conversión de enums a texto e índices en `ProjectId`, `(Status, Priority)`, `(Status, DueDate)` y `Priority`.
-- [x] **Repositorios (`Repositories/`):**
+- [x] **Repositorios (`Persistence/Repositories/`):**
   - `ProjectRepository.cs` implementando `IProjectRepository` (con `Include(p => p.Tasks)` y `AsNoTracking()` en lectura).
   - `TaskRepository.cs` implementando `ITaskRepository` (filtros combinables por `status` y `priority`, consulta por `projectId` y vencidas no completadas).
 - [x] **Inyección de dependencias (`DependencyInjection.cs`):**
-  - Método de extensión `AddInfrastructure(IConfiguration configuration)` registrando `ApplicationDbContext` con `UseNpgsql`, reintentos automáticos, timeout de 30s y ambos repositorios.
-- [x] **Migración inicial (`Data/Migrations/`):**
+  - Método de extensión `AddInfrastructure(IConfiguration configuration)` registrando `AppDbContext` con `UseNpgsql`, reintentos automáticos, timeout de 30s y ambos repositorios.
+- [x] **Migración inicial (`Persistence/Migrations/`):**
   - [x] Generar migración inicial `InitialCreate` para PostgreSQL:
     ```bash
-    dotnet ef migrations add InitialCreate --project src/ProTask.Infrastructure --startup-project src/ProTask.API --output-dir Data/Migrations
+    dotnet ef migrations add InitialCreate --project src/ProTask.Infrastructure --startup-project src/ProTask.API --output-dir Persistence/Migrations
     ```
   - [x] Configurar contraseña local con `dotnet user-secrets` y aplicar la migración en PostgreSQL local (`protask_dev`):
     ```bash
@@ -144,7 +145,7 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
 ## Fase 5 — Capa de Presentación / API (`src/ProTask.API`)
 
 - [x] **Manejo global de excepciones:**
-  - `Middlewares/ExceptionHandlingMiddleware.cs` + `InvalidModelStateResponseFactory` devolviendo **RFC 7807 (`application/problem+json`)** con `traceId`:
+  - `Middleware/ExceptionHandlingMiddleware.cs` + `InvalidModelStateResponseFactory` devolviendo **RFC 7807 (`application/problem+json`)** con `traceId`:
     - `ValidationException` / errores de model binding → `400 Bad Request`
     - `NotFoundException` → `404 Not Found`
     - `BusinessRuleException` → `409 Conflict`
@@ -153,7 +154,7 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
   - `Controllers/ProjectsController.cs`: `GET`, `GET /{id}`, `GET /{id}/tasks`, `POST`, `PUT /{id}`, `DELETE /{id}`.
   - `Controllers/TasksController.cs`: `GET ?status=&priority=`, `GET /overdue`, `GET /{id}`, `POST`, `PUT /{id}`, `PATCH /{id}/status`, `DELETE /{id}`.
 - [x] **Configurar `Program.cs` y Health Checks:**
-  - Eliminado `/weatherforecast`, registrados `AddControllers()` y `ConfigureHttpJsonOptions` con `JsonStringEnumConverter`, `AddApplication()`, `AddInfrastructure()`, OpenAPI (`SchemaTransformer` para enums en texto) + Swagger UI en `/swagger`, `ExceptionHandlingMiddleware`, `Health/DatabaseHealthCheck.cs` en `/health` (JSON con chequeo real de PostgreSQL), `/health/live` y `public partial class Program { }`.
+  - Eliminado `/weatherforecast`, registrados `AddControllers()` y `ConfigureHttpJsonOptions` con `JsonStringEnumConverter`, `AddApplication()`, `AddInfrastructure()` (que registra `Persistence/DatabaseHealthCheck.cs`), OpenAPI (`SchemaTransformer` para enums en texto) + Swagger UI en `/swagger`, `ExceptionHandlingMiddleware`, `/health` (JSON con chequeo real de PostgreSQL) y `/health/live` con `.ShortCircuit()`, y `public partial class Program { }`.
 
 ---
 
@@ -174,15 +175,15 @@ Guía paso a paso para completar el proyecto **ProTask API** desde la estructura
 - [x] **`ProTask.Application.Tests`** (44 pruebas `Unit`):
   - `Services/ProjectServiceTests.cs` y `TaskServiceTests.cs`
   - `Validators/` (5 archivos: uno por cada validador FluentValidation)
-  - `Mappings/MappingProfileTests.cs`
+  - `Mappings/MappingExtensionsTests.cs`
 - [x] **`ProTask.Infrastructure.Tests`** (15 pruebas: 2 `Unit` + 13 `Integration` contra `protask_infra_test`):
   - `Fixtures/PostgreSqlFixture.cs` e `InfrastructureCollection.cs`
-  - `Data/MigrationTests.cs` y `DependencyInjectionTests.cs`
-  - `Repositories/ProjectRepositoryTests.cs` y `TaskRepositoryTests.cs`
+  - `Persistence/MigrationTests.cs` y `DependencyInjectionTests.cs`
+  - `Persistence/Repositories/ProjectRepositoryTests.cs` y `TaskRepositoryTests.cs`
 - [x] **`ProTask.API.Tests`** (22 pruebas: 11 `Unit` + 11 `Integration` contra `protask_api_test`):
   - `Controllers/ProjectsControllerTests.cs` y `TasksControllerTests.cs`
   - `Fixtures/ApiPostgreSqlFixture.cs`, `ProTaskApiFactory.cs` y `ApiCollection.cs`
-  - `Endpoints/ProjectsEndpointsTests.cs`, `TasksEndpointsTests.cs` y `OpenApiTests.cs`
+  - `Endpoints/ProjectsEndpointsTests.cs`, `TasksEndpointsTests.cs` y `HealthAndOpenApiEndpointsTests.cs`
 - [x] Verificación local completa en `Release` (`dotnet build -p:TreatWarningsAsErrors=true`: 0 errores, 0 advertencias; `dotnet test ProTask.slnx`: **96/96 pruebas** en paralelo).
 
 ---

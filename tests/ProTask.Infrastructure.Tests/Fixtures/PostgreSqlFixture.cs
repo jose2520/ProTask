@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
-using ProTask.Infrastructure.Data;
+using ProTask.Infrastructure.Persistence;
 using Xunit;
 
 namespace ProTask.Infrastructure.Tests.Fixtures;
@@ -35,12 +35,12 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
         }
     }
 
-    public ApplicationDbContext CreateDbContext()
+    public AppDbContext CreateDbContext()
     {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+        var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(ConnectionString, npgsql =>
             {
-                npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
                 npgsql.EnableRetryOnFailure(
                     maxRetryCount: 5,
                     maxRetryDelay: TimeSpan.FromSeconds(5),
@@ -49,7 +49,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
             })
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new AppDbContext(options);
     }
 
     public async Task ResetDatabaseAsync()

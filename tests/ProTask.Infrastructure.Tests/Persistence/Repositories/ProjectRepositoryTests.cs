@@ -2,11 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using ProTask.Domain.Entities;
 using ProTask.Domain.Enums;
 using ProTask.Domain.Exceptions;
-using ProTask.Infrastructure.Repositories;
+using ProTask.Infrastructure.Persistence.Repositories;
 using ProTask.Infrastructure.Tests.Fixtures;
 using Xunit;
 
-namespace ProTask.Infrastructure.Tests.Repositories;
+namespace ProTask.Infrastructure.Tests.Persistence.Repositories;
 
 [Collection(InfrastructureCollection.Name)]
 [Trait("Category", "Integration")]
@@ -29,30 +29,16 @@ public sealed class ProjectRepositoryTests : IAsyncLifetime
         await using var context = _fixture.CreateDbContext();
         var sut = new ProjectRepository(context);
 
-        var project = new Project
-        {
-            Name = "Backend PostgreSQL",
-            Description = "Persistencia relacional",
-            StartDate = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc),
-            Tasks =
-            [
-                new TaskItem
-                {
-                    Title = "Crear DbContext",
-                    Status = TaskItemStatus.Completada,
-                    Priority = TaskPriority.Alta,
-                    DueDate = new DateTime(2026, 3, 5, 0, 0, 0, DateTimeKind.Utc)
-                },
-                new TaskItem
-                {
-                    Title = "Crear repositorios",
-                    Status = TaskItemStatus.Pendiente,
-                    Priority = TaskPriority.Media,
-                    DueDate = new DateTime(2026, 3, 10, 0, 0, 0, DateTimeKind.Utc)
-                }
-            ]
-        };
+        var project = Project.Create(
+            "Backend PostgreSQL",
+            "Persistencia relacional",
+            new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc));
+
+        project.AddTasks([
+            TaskItem.Create("Crear DbContext", null, TaskPriority.Alta, new DateTime(2026, 3, 5, 0, 0, 0, DateTimeKind.Utc), status: TaskItemStatus.Completada),
+            TaskItem.Create("Crear repositorios", null, TaskPriority.Media, new DateTime(2026, 3, 10, 0, 0, 0, DateTimeKind.Utc), status: TaskItemStatus.Pendiente)
+        ]);
 
         var created = await sut.AddAsync(project);
         context.ChangeTracker.Clear();
@@ -71,14 +57,13 @@ public sealed class ProjectRepositoryTests : IAsyncLifetime
         await using var context = _fixture.CreateDbContext();
         var sut = new ProjectRepository(context);
 
-        var created = await sut.AddAsync(new Project
-        {
-            Name = "Original",
-            StartDate = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc)
-        });
+        var created = await sut.AddAsync(Project.Create(
+            "Original",
+            null,
+            new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc)));
 
-        created.Name = "Actualizado";
+        created.UpdateDetails("Actualizado", null, created.StartDate, created.EndDate);
         await sut.UpdateAsync(created);
         context.ChangeTracker.Clear();
 
@@ -95,23 +80,10 @@ public sealed class ProjectRepositoryTests : IAsyncLifetime
         await using var context = _fixture.CreateDbContext();
         var sut = new ProjectRepository(context);
 
-        var project = await sut.AddAsync(new Project
-        {
-            Name = "Proyecto protegido",
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddDays(5),
-            Tasks =
-            [
-                new TaskItem
-                {
-                    Title = "Activa",
-                    Status = status,
-                    Priority = TaskPriority.Alta,
-                    DueDate = DateTime.UtcNow.AddDays(2)
-                }
-            ]
-        });
+        var project = Project.Create("Proyecto protegido", null, DateTime.UtcNow, DateTime.UtcNow.AddDays(5));
+        project.AddTask(TaskItem.Create("Activa", null, TaskPriority.Alta, DateTime.UtcNow.AddDays(2), status: status));
 
+        project = await sut.AddAsync(project);
         context.ChangeTracker.Clear();
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => sut.DeleteIfNoIncompleteTasksAsync(project.Id));
@@ -126,37 +98,27 @@ public sealed class ProjectRepositoryTests : IAsyncLifetime
         await using var context = _fixture.CreateDbContext();
         var sut = new ProjectRepository(context);
 
-        var project = await sut.AddAsync(new Project
-        {
-            Name = "Proyecto eliminable",
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddDays(5),
-            Tasks =
-            [
-                new TaskItem
-                {
-                    Title = "Completada",
-                    Status = TaskItemStatus.Completada,
-                    Priority = TaskPriority.Media,
-                    DueDate = DateTime.UtcNow.AddDays(1)
-                }
-            ]
-        });
+        var project = Project.Create("Proyecto eliminable", null, DateTime.UtcNow, DateTime.UtcNow.AddDays(5));
+        project.AddTask(TaskItem.Create("Completada", null, TaskPriority.Media, DateTime.UtcNow.AddDays(1), status: TaskItemStatus.Completada));
 
+        project = await sut.AddAsync(project);
         context.ChangeTracker.Clear();
 
-        await sut.DeleteIfNoIncompleteTasksAsync(project.Id);
+        var deleted = await sut.DeleteIfNoIncompleteTasksAsync(project.Id);
 
+        Assert.True(deleted);
         Assert.False(await sut.ExistsAsync(project.Id));
         Assert.Empty(await context.Tasks.AsNoTracking().ToListAsync());
     }
 
     [Fact]
-    public async Task DeleteIfNoIncompleteTasksAsync_WhenProjectMissing_ThrowsNotFoundException()
+    public async Task DeleteIfNoIncompleteTasksAsync_WhenProjectMissing_ReturnsFalse()
     {
         await using var context = _fixture.CreateDbContext();
         var sut = new ProjectRepository(context);
 
-        await Assert.ThrowsAsync<NotFoundException>(() => sut.DeleteIfNoIncompleteTasksAsync(9999));
+        var deleted = await sut.DeleteIfNoIncompleteTasksAsync(9999);
+
+        Assert.False(deleted);
     }
 }

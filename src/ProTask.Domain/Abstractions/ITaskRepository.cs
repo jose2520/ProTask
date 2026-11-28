@@ -1,7 +1,7 @@
 using ProTask.Domain.Entities;
 using ProTask.Domain.Enums;
 
-namespace ProTask.Domain.Interfaces;
+namespace ProTask.Domain.Abstractions;
 
 public interface ITaskRepository
 {

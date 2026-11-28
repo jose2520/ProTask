@@ -1,10 +1,10 @@
 using ProTask.Domain.Entities;
 using ProTask.Domain.Enums;
-using ProTask.Infrastructure.Repositories;
+using ProTask.Infrastructure.Persistence.Repositories;
 using ProTask.Infrastructure.Tests.Fixtures;
 using Xunit;
 
-namespace ProTask.Infrastructure.Tests.Repositories;
+namespace ProTask.Infrastructure.Tests.Persistence.Repositories;
 
 [Collection(InfrastructureCollection.Name)]
 [Trait("Category", "Integration")]
@@ -24,18 +24,16 @@ public sealed class TaskRepositoryTests : IAsyncLifetime
         await _fixture.ResetDatabaseAsync();
 
         await using var context = _fixture.CreateDbContext();
-        var projectA = new Project
-        {
-            Name = "Proyecto A",
-            StartDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2026, 12, 31, 0, 0, 0, DateTimeKind.Utc)
-        };
-        var projectB = new Project
-        {
-            Name = "Proyecto B",
-            StartDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2026, 12, 31, 0, 0, 0, DateTimeKind.Utc)
-        };
+        var projectA = Project.Create(
+            "Proyecto A",
+            null,
+            new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 12, 31, 0, 0, 0, DateTimeKind.Utc));
+        var projectB = Project.Create(
+            "Proyecto B",
+            null,
+            new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 12, 31, 0, 0, 0, DateTimeKind.Utc));
 
         context.Projects.AddRange(projectA, projectB);
         await context.SaveChangesAsync();
@@ -52,8 +50,8 @@ public sealed class TaskRepositoryTests : IAsyncLifetime
         await using var context = _fixture.CreateDbContext();
         var sut = new TaskRepository(context);
 
-        await sut.AddAsync(new TaskItem { Title = "A1", ProjectId = _projectAId, DueDate = DateTime.UtcNow.AddDays(1) });
-        await sut.AddAsync(new TaskItem { Title = "B1", ProjectId = _projectBId, DueDate = DateTime.UtcNow.AddDays(2) });
+        await sut.AddAsync(TaskItem.Create("A1", null, TaskPriority.Media, DateTime.UtcNow.AddDays(1), _projectAId));
+        await sut.AddAsync(TaskItem.Create("B1", null, TaskPriority.Media, DateTime.UtcNow.AddDays(2), _projectBId));
 
         var tasksA = await sut.GetByProjectIdAsync(_projectAId);
 
@@ -67,9 +65,9 @@ public sealed class TaskRepositoryTests : IAsyncLifetime
         await using var context = _fixture.CreateDbContext();
         var sut = new TaskRepository(context);
 
-        await sut.AddAsync(new TaskItem { Title = "P-Alta", Status = TaskItemStatus.Pendiente, Priority = TaskPriority.Alta, DueDate = DateTime.UtcNow.AddDays(1), ProjectId = _projectAId });
-        await sut.AddAsync(new TaskItem { Title = "P-Baja", Status = TaskItemStatus.Pendiente, Priority = TaskPriority.Baja, DueDate = DateTime.UtcNow.AddDays(2), ProjectId = _projectAId });
-        await sut.AddAsync(new TaskItem { Title = "C-Alta", Status = TaskItemStatus.Completada, Priority = TaskPriority.Alta, DueDate = DateTime.UtcNow.AddDays(3), ProjectId = _projectAId });
+        await sut.AddAsync(TaskItem.Create("P-Alta", null, TaskPriority.Alta, DateTime.UtcNow.AddDays(1), _projectAId, TaskItemStatus.Pendiente));
+        await sut.AddAsync(TaskItem.Create("P-Baja", null, TaskPriority.Baja, DateTime.UtcNow.AddDays(2), _projectAId, TaskItemStatus.Pendiente));
+        await sut.AddAsync(TaskItem.Create("C-Alta", null, TaskPriority.Alta, DateTime.UtcNow.AddDays(3), _projectAId, TaskItemStatus.Completada));
 
         var byStatus = await sut.GetFilteredAsync(TaskItemStatus.Pendiente, null);
         var byPriority = await sut.GetFilteredAsync(null, TaskPriority.Alta);
@@ -88,10 +86,10 @@ public sealed class TaskRepositoryTests : IAsyncLifetime
         var sut = new TaskRepository(context);
         var referenceUtc = new DateTime(2026, 11, 25, 12, 0, 0, DateTimeKind.Utc);
 
-        await sut.AddAsync(new TaskItem { Title = "Vencida Pendiente", Status = TaskItemStatus.Pendiente, DueDate = referenceUtc.AddDays(-2), ProjectId = _projectAId });
-        await sut.AddAsync(new TaskItem { Title = "Vencida EnProgreso", Status = TaskItemStatus.EnProgreso, DueDate = referenceUtc.AddHours(-1), ProjectId = _projectAId });
-        await sut.AddAsync(new TaskItem { Title = "Vencida Completada", Status = TaskItemStatus.Completada, DueDate = referenceUtc.AddDays(-5), ProjectId = _projectAId });
-        await sut.AddAsync(new TaskItem { Title = "Futura Pendiente", Status = TaskItemStatus.Pendiente, DueDate = referenceUtc.AddDays(2), ProjectId = _projectAId });
+        await sut.AddAsync(TaskItem.Create("Vencida Pendiente", null, TaskPriority.Media, referenceUtc.AddDays(-2), _projectAId, TaskItemStatus.Pendiente));
+        await sut.AddAsync(TaskItem.Create("Vencida EnProgreso", null, TaskPriority.Media, referenceUtc.AddHours(-1), _projectAId, TaskItemStatus.EnProgreso));
+        await sut.AddAsync(TaskItem.Create("Vencida Completada", null, TaskPriority.Media, referenceUtc.AddDays(-5), _projectAId, TaskItemStatus.Completada));
+        await sut.AddAsync(TaskItem.Create("Futura Pendiente", null, TaskPriority.Media, referenceUtc.AddDays(2), _projectAId, TaskItemStatus.Pendiente));
 
         var overdue = await sut.GetOverdueIncompleteAsync(referenceUtc);
 
@@ -105,18 +103,15 @@ public sealed class TaskRepositoryTests : IAsyncLifetime
         await using var context = _fixture.CreateDbContext();
         var sut = new TaskRepository(context);
 
-        var created = await sut.AddAsync(new TaskItem
-        {
-            Title = "Inicial",
-            Status = TaskItemStatus.Pendiente,
-            Priority = TaskPriority.Baja,
-            DueDate = new DateTime(2026, 12, 1, 0, 0, 0, DateTimeKind.Utc),
-            ProjectId = _projectAId
-        });
+        var created = await sut.AddAsync(TaskItem.Create(
+            "Inicial",
+            null,
+            TaskPriority.Baja,
+            new DateTime(2026, 12, 1, 0, 0, 0, DateTimeKind.Utc),
+            _projectAId,
+            TaskItemStatus.Pendiente));
 
-        created.Title = "Editada";
-        created.Status = TaskItemStatus.Completada;
-        created.Priority = TaskPriority.Critica;
+        created.UpdateDetails("Editada", null, TaskItemStatus.Completada, TaskPriority.Critica, created.DueDate);
         await sut.UpdateAsync(created);
         context.ChangeTracker.Clear();
 

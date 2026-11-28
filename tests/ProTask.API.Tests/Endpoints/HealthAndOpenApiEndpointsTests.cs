@@ -7,11 +7,11 @@ namespace ProTask.API.Tests.Endpoints;
 
 [Collection(ApiCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class OpenApiTests : IDisposable
+public sealed class HealthAndOpenApiEndpointsTests : IDisposable
 {
     private readonly HttpClient _client;
 
-    public OpenApiTests(ApiPostgreSqlFixture fixture)
+    public HealthAndOpenApiEndpointsTests(ApiPostgreSqlFixture fixture)
     {
         _client = fixture.ApiFactory.CreateClient();
     }

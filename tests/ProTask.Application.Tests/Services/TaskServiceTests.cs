@@ -1,12 +1,12 @@
 using FluentValidation;
 using Moq;
 using ProTask.Application.DTOs.Tasks;
+using ProTask.Application.Exceptions;
 using ProTask.Application.Services;
 using ProTask.Application.Validators;
+using ProTask.Domain.Abstractions;
 using ProTask.Domain.Entities;
 using ProTask.Domain.Enums;
-using ProTask.Domain.Exceptions;
-using ProTask.Domain.Interfaces;
 using Xunit;
 
 namespace ProTask.Application.Tests.Services;
@@ -36,7 +36,7 @@ public sealed class TaskServiceTests
     {
         _taskRepositoryMock
             .Setup(repo => repo.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new TaskItem { Id = 1, Title = "T1", DueDate = FixedUtcNow.UtcDateTime.AddDays(1) }]);
+            .ReturnsAsync([TaskItem.Create("T1", null, TaskPriority.Media, FixedUtcNow.UtcDateTime.AddDays(1), id: 1)]);
 
         var tasks = await _sut.GetAllAsync();
 
@@ -50,7 +50,7 @@ public sealed class TaskServiceTests
     {
         _taskRepositoryMock
             .Setup(repo => repo.GetFilteredAsync(TaskItemStatus.Pendiente, TaskPriority.Alta, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new TaskItem { Id = 2, Title = "Urgente", Status = TaskItemStatus.Pendiente, Priority = TaskPriority.Alta, DueDate = FixedUtcNow.UtcDateTime.AddDays(-1) }]);
+            .ReturnsAsync([TaskItem.Create("Urgente", null, TaskPriority.Alta, FixedUtcNow.UtcDateTime.AddDays(-1), status: TaskItemStatus.Pendiente, id: 2)]);
 
         var tasks = await _sut.GetAllAsync(TaskItemStatus.Pendiente, TaskPriority.Alta);
 
@@ -76,7 +76,7 @@ public sealed class TaskServiceTests
     {
         _taskRepositoryMock
             .Setup(repo => repo.GetOverdueIncompleteAsync(FixedUtcNow.UtcDateTime, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new TaskItem { Id = 7, Title = "Vencida", Status = TaskItemStatus.EnProgreso, DueDate = FixedUtcNow.UtcDateTime.AddHours(-2) }]);
+            .ReturnsAsync([TaskItem.Create("Vencida", null, TaskPriority.Media, FixedUtcNow.UtcDateTime.AddHours(-2), status: TaskItemStatus.EnProgreso, id: 7)]);
 
         var result = await _sut.GetOverdueAsync();
 
@@ -150,15 +150,14 @@ public sealed class TaskServiceTests
     [Fact]
     public async Task UpdateStatusAsync_ChangesOnlyTaskStatus()
     {
-        var existing = new TaskItem
-        {
-            Id = 4,
-            Title = "Revisar PR",
-            Status = TaskItemStatus.Pendiente,
-            Priority = TaskPriority.Media,
-            DueDate = FixedUtcNow.UtcDateTime.AddDays(1),
-            ProjectId = 1
-        };
+        var existing = TaskItem.Create(
+            "Revisar PR",
+            null,
+            TaskPriority.Media,
+            FixedUtcNow.UtcDateTime.AddDays(1),
+            projectId: 1,
+            status: TaskItemStatus.Pendiente,
+            id: 4);
 
         _taskRepositoryMock
             .Setup(repo => repo.GetByIdAsync(4, It.IsAny<CancellationToken>()))

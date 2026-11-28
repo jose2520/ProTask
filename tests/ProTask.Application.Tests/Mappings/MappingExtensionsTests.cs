@@ -9,24 +9,22 @@ using Xunit;
 namespace ProTask.Application.Tests.Mappings;
 
 [Trait("Category", "Unit")]
-public sealed class MappingProfileTests
+public sealed class MappingExtensionsTests
 {
     [Fact]
     public void ProjectToDto_MapsProgressAndTaskCounts()
     {
-        var project = new Project
-        {
-            Id = 5,
-            Name = "Portal",
-            Description = "Desc",
-            StartDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
-            Tasks =
-            [
-                new TaskItem { Status = TaskItemStatus.Completada },
-                new TaskItem { Status = TaskItemStatus.Pendiente }
-            ]
-        };
+        var project = Project.Create(
+            "Portal",
+            "Desc",
+            new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+            id: 5);
+
+        project.AddTasks([
+            TaskItem.Create("T1", null, TaskPriority.Media, new DateTime(2026, 1, 10, 0, 0, 0, DateTimeKind.Utc), 5, TaskItemStatus.Completada),
+            TaskItem.Create("T2", null, TaskPriority.Media, new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc), 5, TaskItemStatus.Pendiente)
+        ]);
 
         var dto = project.ToDto();
 
@@ -60,15 +58,14 @@ public sealed class MappingProfileTests
     public void TaskItemToDto_ComputesIsOverdueAgainstReferenceUtc()
     {
         var referenceUtc = new DateTime(2026, 11, 25, 12, 0, 0, DateTimeKind.Utc);
-        var task = new TaskItem
-        {
-            Id = 9,
-            Title = "Revisar logs",
-            Status = TaskItemStatus.EnProgreso,
-            Priority = TaskPriority.Alta,
-            DueDate = referenceUtc.AddMinutes(-30),
-            ProjectId = 2
-        };
+        var task = TaskItem.Create(
+            "Revisar logs",
+            null,
+            TaskPriority.Alta,
+            referenceUtc.AddMinutes(-30),
+            projectId: 2,
+            status: TaskItemStatus.EnProgreso,
+            id: 9);
 
         var dto = task.ToDto(referenceUtc);
 
@@ -102,7 +99,7 @@ public sealed class MappingProfileTests
     [Fact]
     public void ApplyUpdate_WhenTaskStatusOrPriorityMissing_ThrowsBusinessRuleException()
     {
-        var task = new TaskItem { Title = "Original" };
+        var task = TaskItem.Create("Original", null, TaskPriority.Media, new DateTime(2026, 12, 1, 0, 0, 0, DateTimeKind.Utc));
 
         Assert.Throws<BusinessRuleException>(() => task.ApplyUpdate(new UpdateTaskItemDto
         {

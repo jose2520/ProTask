@@ -13,7 +13,7 @@ public sealed class TaskItemTests
     [Fact]
     public void NewTask_HasPendienteStatusAndMediaPriorityByDefault()
     {
-        var task = new TaskItem();
+        var task = TaskItem.Create("Nueva tarea", null, TaskPriority.Media, NowUtc.AddDays(1));
 
         Assert.Equal(TaskItemStatus.Pendiente, task.Status);
         Assert.Equal(TaskPriority.Media, task.Priority);
@@ -22,10 +22,10 @@ public sealed class TaskItemTests
     [Fact]
     public void IsOverdue_EvaluatesStatusAndDueDateCorrectly()
     {
-        var overduePending = new TaskItem { Status = TaskItemStatus.Pendiente, DueDate = NowUtc.AddHours(-1) };
-        var overdueInProgress = new TaskItem { Status = TaskItemStatus.EnProgreso, DueDate = NowUtc.AddDays(-1) };
-        var overdueCompleted = new TaskItem { Status = TaskItemStatus.Completada, DueDate = NowUtc.AddDays(-5) };
-        var futurePending = new TaskItem { Status = TaskItemStatus.Pendiente, DueDate = NowUtc.AddHours(1) };
+        var overduePending = TaskItem.Create("T1", null, TaskPriority.Media, NowUtc.AddHours(-1), status: TaskItemStatus.Pendiente);
+        var overdueInProgress = TaskItem.Create("T2", null, TaskPriority.Media, NowUtc.AddDays(-1), status: TaskItemStatus.EnProgreso);
+        var overdueCompleted = TaskItem.Create("T3", null, TaskPriority.Media, NowUtc.AddDays(-5), status: TaskItemStatus.Completada);
+        var futurePending = TaskItem.Create("T4", null, TaskPriority.Media, NowUtc.AddHours(1), status: TaskItemStatus.Pendiente);
 
         Assert.True(overduePending.IsOverdue(NowUtc));
         Assert.True(overdueInProgress.IsOverdue(NowUtc));
@@ -36,7 +36,7 @@ public sealed class TaskItemTests
     [Fact]
     public void IsOverdue_WhenDueDateEqualsReference_ReturnsFalse()
     {
-        var task = new TaskItem { Status = TaskItemStatus.Pendiente, DueDate = NowUtc };
+        var task = TaskItem.Create("T1", null, TaskPriority.Media, NowUtc, status: TaskItemStatus.Pendiente);
 
         Assert.False(task.IsOverdue(NowUtc));
     }
@@ -44,7 +44,7 @@ public sealed class TaskItemTests
     [Fact]
     public void ChangeStatus_WithValidStatus_UpdatesStatus()
     {
-        var task = new TaskItem { Status = TaskItemStatus.Pendiente };
+        var task = TaskItem.Create("T1", null, TaskPriority.Media, NowUtc.AddDays(1), status: TaskItemStatus.Pendiente);
 
         task.ChangeStatus(TaskItemStatus.EnProgreso);
 
@@ -54,7 +54,7 @@ public sealed class TaskItemTests
     [Fact]
     public void ChangeStatus_WithUndefinedStatus_ThrowsBusinessRuleException()
     {
-        var task = new TaskItem { Status = TaskItemStatus.Pendiente };
+        var task = TaskItem.Create("T1", null, TaskPriority.Media, NowUtc.AddDays(1), status: TaskItemStatus.Pendiente);
 
         var exception = Assert.Throws<BusinessRuleException>(() => task.ChangeStatus((TaskItemStatus)999));
 

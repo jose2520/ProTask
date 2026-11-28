@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using ProTask.Domain.Entities;
 
-namespace ProTask.Infrastructure.Data;
+namespace ProTask.Infrastructure.Persistence;
 
-public class ApplicationDbContext : DbContext
+public class AppDbContext : DbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
     }
@@ -16,6 +16,6 @@ public class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }

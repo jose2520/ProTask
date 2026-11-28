@@ -1,9 +1,9 @@
 using FluentValidation;
 using ProTask.Application.DTOs.Projects;
+using ProTask.Application.Exceptions;
 using ProTask.Application.Interfaces;
 using ProTask.Application.Mappings;
-using ProTask.Domain.Exceptions;
-using ProTask.Domain.Interfaces;
+using ProTask.Domain.Abstractions;
 
 namespace ProTask.Application.Services;
 
@@ -62,6 +62,10 @@ public sealed class ProjectService : IProjectService
 
     public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        await _projectRepository.DeleteIfNoIncompleteTasksAsync(id, cancellationToken);
+        var deleted = await _projectRepository.DeleteIfNoIncompleteTasksAsync(id, cancellationToken);
+        if (!deleted)
+        {
+            throw new NotFoundException("el proyecto", id);
+        }
     }
 }

@@ -142,15 +142,15 @@ ProTask/
 │   └── assets/
 │       └── protask-banner.svg    # Banner vectorial del README
 ├── src/
-│   ├── ProTask.Domain/           # Entidades, enums, excepciones e interfaces de dominio (0 paquetes externos)
-│   ├── ProTask.Application/      # DTOs, validadores FluentValidation, mapeo manual y servicios
-│   ├── ProTask.Infrastructure/   # DbContext, configuraciones Fluent API, migraciones PostgreSQL y repositorios
-│   └── ProTask.API/              # Controladores, middleware RFC 7807, health checks, OpenAPI/Swagger y Program.cs
+│   ├── ProTask.Domain/           # Abstractions, entidades, enums y excepciones de dominio (0 paquetes externos)
+│   ├── ProTask.Application/      # DTOs, excepciones de aplicación, validadores FluentValidation, mapeo manual y servicios
+│   ├── ProTask.Infrastructure/   # Persistence (AppDbContext, DatabaseHealthCheck, configuraciones Fluent API, migraciones y repositorios)
+│   └── ProTask.API/              # Controllers, Middleware RFC 7807, OpenAPI/Swagger y Program.cs
 └── tests/
     ├── ProTask.Domain.Tests/         # Pruebas unitarias de ProTask.Domain (Entities)
     ├── ProTask.Application.Tests/    # Pruebas unitarias de ProTask.Application (Services, Validators, Mappings)
-    ├── ProTask.Infrastructure.Tests/ # Pruebas de integración PostgreSQL (Data, Repositories, DI)
-    └── ProTask.API.Tests/            # Pruebas de controladores (Unit) + endpoints HTTP / OpenAPI (Integration)
+    ├── ProTask.Infrastructure.Tests/ # Pruebas de integración PostgreSQL (Persistence/MigrationTests, Persistence/Repositories, DI)
+    └── ProTask.API.Tests/            # Pruebas de controladores (Unit) + endpoints HTTP / Health / OpenAPI (Integration)
 ```
 
 ---
@@ -190,7 +190,7 @@ Cada proyecto en `tests/` espeja 1 a 1 su capa equivalente en `src/` y cada clas
 | `ProTask.Domain.Tests` | `Entities/` | `Unit` | 15 | No |
 | `ProTask.Application.Tests` | `Services/`, `Validators/`, `Mappings/` | `Unit` | 44 | No (`Moq`) |
 | `ProTask.Infrastructure.Tests` | `DependencyInjectionTests.cs` | `Unit` | 2 | No |
-| `ProTask.Infrastructure.Tests` | `Data/`, `Repositories/` | `Integration` | 13 | PostgreSQL (`protask_infra_test`) |
+| `ProTask.Infrastructure.Tests` | `Persistence/` (`MigrationTests`, `Repositories/`) | `Integration` | 13 | PostgreSQL (`protask_infra_test`) |
 | `ProTask.API.Tests` | `Controllers/` | `Unit` | 11 | No (`Moq`) |
 | `ProTask.API.Tests` | `Endpoints/` | `Integration` | 11 | PostgreSQL (`protask_api_test`) |
 

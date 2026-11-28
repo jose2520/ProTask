@@ -1,13 +1,16 @@
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ProTask.Application;
 using ProTask.Application.DTOs.Projects;
 using ProTask.Application.DTOs.Tasks;
 using ProTask.Application.Interfaces;
-using ProTask.Domain.Interfaces;
+using ProTask.Domain.Abstractions;
 using ProTask.Infrastructure;
-using ProTask.Infrastructure.Data;
+using ProTask.Infrastructure.Persistence;
 using Xunit;
 
 namespace ProTask.Infrastructure.Tests;
@@ -26,6 +29,7 @@ public sealed class DependencyInjectionTests
             .Build();
 
         var services = new ServiceCollection();
+        services.AddLogging();
         services.AddApplication();
         services.AddInfrastructure(configuration);
 
@@ -33,7 +37,10 @@ public sealed class DependencyInjectionTests
         using var scope = provider.CreateScope();
         var scopedProvider = scope.ServiceProvider;
 
-        Assert.NotNull(scopedProvider.GetService<ApplicationDbContext>());
+        Assert.NotNull(scopedProvider.GetService<AppDbContext>());
+        Assert.NotNull(scopedProvider.GetService<HealthCheckService>());
+        var healthOptions = scopedProvider.GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value;
+        Assert.Contains(healthOptions.Registrations, registration => registration.Name == "postgresql");
         Assert.NotNull(scopedProvider.GetService<IProjectRepository>());
         Assert.NotNull(scopedProvider.GetService<ITaskRepository>());
         Assert.NotNull(scopedProvider.GetService<IProjectService>());

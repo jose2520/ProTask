@@ -1,18 +1,17 @@
 using System.Data;
 using Microsoft.EntityFrameworkCore;
+using ProTask.Domain.Abstractions;
 using ProTask.Domain.Entities;
 using ProTask.Domain.Enums;
-using ProTask.Domain.Exceptions;
-using ProTask.Domain.Interfaces;
-using ProTask.Infrastructure.Data;
+using ProTask.Infrastructure.Persistence;
 
-namespace ProTask.Infrastructure.Repositories;
+namespace ProTask.Infrastructure.Persistence.Repositories;
 
 public sealed class ProjectRepository : IProjectRepository
 {
-    private readonly ApplicationDbContext _context;
+    private readonly AppDbContext _context;
 
-    public ProjectRepository(ApplicationDbContext context)
+    public ProjectRepository(AppDbContext context)
     {
         _context = context;
     }
@@ -63,35 +62,35 @@ public sealed class ProjectRepository : IProjectRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task DeleteIfNoIncompleteTasksAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteIfNoIncompleteTasksAsync(int id, CancellationToken cancellationToken = default)
     {
         var strategy = _context.Database.CreateExecutionStrategy();
 
-        await strategy.ExecuteAsync(async () =>
+        return await strategy.ExecuteAsync(async () =>
         {
             await using var transaction = await _context.Database.BeginTransactionAsync(
                 IsolationLevel.Serializable,
                 cancellationToken);
 
             var project = await _context.Projects
-                .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
-                ?? throw new NotFoundException("el proyecto", id);
+                .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+
+            if (project is null)
+            {
+                return false;
+            }
 
             var hasIncompleteTasks = await _context.Tasks
                 .AnyAsync(
                     task => task.ProjectId == id && task.Status != TaskItemStatus.Completada,
                     cancellationToken);
 
-            if (hasIncompleteTasks)
-            {
-                throw new BusinessRuleException(
-                    $"No se puede eliminar el proyecto '{project.Name}' (ID: {project.Id}) porque tiene tareas pendientes o en progreso.",
-                    "project_has_incomplete_tasks");
-            }
+            project.EnsureCanBeDeleted(hasIncompleteTasks);
 
             _context.Projects.Remove(project);
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            return true;
         });
     }
 

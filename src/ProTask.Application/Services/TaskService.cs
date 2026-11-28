@@ -1,11 +1,11 @@
 using FluentValidation;
 using FluentValidation.Results;
 using ProTask.Application.DTOs.Tasks;
+using ProTask.Application.Exceptions;
 using ProTask.Application.Interfaces;
 using ProTask.Application.Mappings;
+using ProTask.Domain.Abstractions;
 using ProTask.Domain.Enums;
-using ProTask.Domain.Exceptions;
-using ProTask.Domain.Interfaces;
 
 namespace ProTask.Application.Services;
 

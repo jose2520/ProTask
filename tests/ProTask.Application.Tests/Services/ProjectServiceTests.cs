@@ -1,12 +1,13 @@
 using FluentValidation;
 using Moq;
 using ProTask.Application.DTOs.Projects;
+using ProTask.Application.Exceptions;
 using ProTask.Application.Services;
 using ProTask.Application.Validators;
+using ProTask.Domain.Abstractions;
 using ProTask.Domain.Entities;
 using ProTask.Domain.Enums;
 using ProTask.Domain.Exceptions;
-using ProTask.Domain.Interfaces;
 using Xunit;
 
 namespace ProTask.Application.Tests.Services;
@@ -28,32 +29,27 @@ public sealed class ProjectServiceTests
     [Fact]
     public async Task GetAllAsync_ReturnsProjectsWithProgressPercentage()
     {
-        var projects = new List<Project>
-        {
-            new()
-            {
-                Id = 1,
-                Name = "API Core",
-                StartDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                EndDate = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
-                Tasks =
-                [
-                    new TaskItem { Status = TaskItemStatus.Completada },
-                    new TaskItem { Status = TaskItemStatus.Pendiente }
-                ]
-            },
-            new()
-            {
-                Id = 2,
-                Name = "Vacío",
-                StartDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                EndDate = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc)
-            }
-        };
+        var projectWithTasks = Project.Create(
+            "API Core",
+            null,
+            new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+            id: 1);
+        projectWithTasks.AddTasks([
+            TaskItem.Create("T1", null, TaskPriority.Media, new DateTime(2026, 1, 10, 0, 0, 0, DateTimeKind.Utc), 1, TaskItemStatus.Completada),
+            TaskItem.Create("T2", null, TaskPriority.Media, new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc), 1, TaskItemStatus.Pendiente)
+        ]);
+
+        var emptyProject = Project.Create(
+            "Vacío",
+            null,
+            new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+            id: 2);
 
         _projectRepositoryMock
             .Setup(repo => repo.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(projects);
+            .ReturnsAsync([projectWithTasks, emptyProject]);
 
         var result = await _sut.GetAllAsync();
 
@@ -116,13 +112,12 @@ public sealed class ProjectServiceTests
     [Fact]
     public async Task UpdateAsync_WhenProjectExists_UpdatesAndReturnsDto()
     {
-        var existing = new Project
-        {
-            Id = 3,
-            Name = "Original",
-            StartDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2026, 1, 10, 0, 0, 0, DateTimeKind.Utc)
-        };
+        var existing = Project.Create(
+            "Original",
+            null,
+            new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 1, 10, 0, 0, 0, DateTimeKind.Utc),
+            id: 3);
 
         _projectRepositoryMock
             .Setup(repo => repo.GetByIdWithTasksAsync(3, It.IsAny<CancellationToken>()))
@@ -148,18 +143,18 @@ public sealed class ProjectServiceTests
     {
         _projectRepositoryMock
             .Setup(repo => repo.DeleteIfNoIncompleteTasksAsync(5, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new BusinessRuleException("Proyecto con tareas activas", "project_has_incomplete_tasks"));
+            .ThrowsAsync(new BusinessRuleException("Proyecto con tareas activas", Project.IncompleteTasksErrorCode));
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => _sut.DeleteAsync(5));
         _projectRepositoryMock.Verify(repo => repo.DeleteIfNoIncompleteTasksAsync(5, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task DeleteAsync_WhenProjectNotFound_PropagatesNotFoundException()
+    public async Task DeleteAsync_WhenProjectNotFound_ThrowsNotFoundException()
     {
         _projectRepositoryMock
             .Setup(repo => repo.DeleteIfNoIncompleteTasksAsync(404, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new NotFoundException("el proyecto", 404));
+            .ReturnsAsync(false);
 
         await Assert.ThrowsAsync<NotFoundException>(() => _sut.DeleteAsync(404));
     }
@@ -167,6 +162,10 @@ public sealed class ProjectServiceTests
     [Fact]
     public async Task DeleteAsync_DelegatesToAtomicRepositoryDelete()
     {
+        _projectRepositoryMock
+            .Setup(repo => repo.DeleteIfNoIncompleteTasksAsync(6, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
         await _sut.DeleteAsync(6);
 
         _projectRepositoryMock.Verify(repo => repo.DeleteIfNoIncompleteTasksAsync(6, It.IsAny<CancellationToken>()), Times.Once);

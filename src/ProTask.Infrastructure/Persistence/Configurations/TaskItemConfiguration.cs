@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ProTask.Domain.Entities;
 
-namespace ProTask.Infrastructure.Data.Configurations;
+namespace ProTask.Infrastructure.Persistence.Configurations;
 
 public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 {

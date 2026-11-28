@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ProTask.Domain.Interfaces;
-using ProTask.Infrastructure.Data;
-using ProTask.Infrastructure.Repositories;
+using ProTask.Domain.Abstractions;
+using ProTask.Infrastructure.Persistence;
+using ProTask.Infrastructure.Persistence.Repositories;
 
 namespace ProTask.Infrastructure;
 
@@ -22,10 +22,10 @@ public static class DependencyInjection
                 "La cadena de conexión 'ConnectionStrings:DefaultConnection' no está configurada.");
         }
 
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
-                npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                npgsqlOptions.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
                 npgsqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
                     maxRetryDelay: TimeSpan.FromSeconds(10),
@@ -35,6 +35,9 @@ public static class DependencyInjection
 
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<ITaskRepository, TaskRepository>();
+
+        services.AddHealthChecks()
+            .AddCheck<DatabaseHealthCheck>("postgresql", tags: ["ready"]);
 
         return services;
     }

@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
-using ProTask.Infrastructure.Data;
+using ProTask.Infrastructure.Persistence;
 using Xunit;
 
 namespace ProTask.API.Tests.Fixtures;
@@ -49,12 +49,12 @@ public sealed class ApiPostgreSqlFixture : IAsyncLifetime
             "TRUNCATE TABLE tasks, projects RESTART IDENTITY CASCADE;");
     }
 
-    private ApplicationDbContext CreateDbContext()
+    private AppDbContext CreateDbContext()
     {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+        var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(ConnectionString, npgsql =>
             {
-                npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
                 npgsql.EnableRetryOnFailure(
                     maxRetryCount: 5,
                     maxRetryDelay: TimeSpan.FromSeconds(5),
@@ -63,7 +63,7 @@ public sealed class ApiPostgreSqlFixture : IAsyncLifetime
             })
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new AppDbContext(options);
     }
 
     private static string ResolveTestConnectionString()

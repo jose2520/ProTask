@@ -3,7 +3,7 @@ using ProTask.Domain.Entities;
 using ProTask.Infrastructure.Tests.Fixtures;
 using Xunit;
 
-namespace ProTask.Infrastructure.Tests.Data;
+namespace ProTask.Infrastructure.Tests.Persistence;
 
 [Collection(InfrastructureCollection.Name)]
 [Trait("Category", "Integration")]
@@ -37,12 +37,11 @@ public sealed class MigrationTests : IAsyncLifetime
     {
         await using var context = _fixture.CreateDbContext();
 
-        context.Projects.Add(new Project
-        {
-            Name = new string('X', 151),
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddDays(1)
-        });
+        context.Projects.Add(Project.Create(
+            new string('X', 151),
+            null,
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(1)));
 
         await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
     }
@@ -56,12 +55,7 @@ public sealed class MigrationTests : IAsyncLifetime
         int id;
         await using (var writeContext = _fixture.CreateDbContext())
         {
-            var project = new Project
-            {
-                Name = "UTC Check",
-                StartDate = startUtc,
-                EndDate = endUtc
-            };
+            var project = Project.Create("UTC Check", null, startUtc, endUtc);
             writeContext.Projects.Add(project);
             await writeContext.SaveChangesAsync();
             id = project.Id;

@@ -4,8 +4,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
-using ProTask.API.Health;
-using ProTask.API.Middlewares;
+using ProTask.API.Middleware;
 using ProTask.Application;
 using ProTask.Infrastructure;
 
@@ -63,9 +62,6 @@ builder.Services.AddOpenApi(options =>
     });
 });
 
-builder.Services.AddHealthChecks()
-    .AddCheck<DatabaseHealthCheck>("postgresql", tags: ["ready"]);
-
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -94,7 +90,7 @@ if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = _ => false
-});
+}).ShortCircuit();
 
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
@@ -118,7 +114,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
         await context.Response.WriteAsync(
             JsonSerializer.Serialize(payload, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
     }
-});
+}).ShortCircuit();
 
 app.MapControllers();
 

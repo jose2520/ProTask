@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ProTask.Domain.Entities;
 
-namespace ProTask.Infrastructure.Data.Configurations;
+namespace ProTask.Infrastructure.Persistence.Configurations;
 
 public sealed class ProjectConfiguration : IEntityTypeConfiguration<Project>
 {
@@ -32,5 +32,8 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<Project>
             .WithOne(task => task.Project)
             .HasForeignKey(task => task.ProjectId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(project => project.Tasks)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

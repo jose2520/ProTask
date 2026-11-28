@@ -1,16 +1,16 @@
 using Microsoft.EntityFrameworkCore;
+using ProTask.Domain.Abstractions;
 using ProTask.Domain.Entities;
 using ProTask.Domain.Enums;
-using ProTask.Domain.Interfaces;
-using ProTask.Infrastructure.Data;
+using ProTask.Infrastructure.Persistence;
 
-namespace ProTask.Infrastructure.Repositories;
+namespace ProTask.Infrastructure.Persistence.Repositories;
 
 public sealed class TaskRepository : ITaskRepository
 {
-    private readonly ApplicationDbContext _context;
+    private readonly AppDbContext _context;
 
-    public TaskRepository(ApplicationDbContext context)
+    public TaskRepository(AppDbContext context)
     {
         _context = context;
     }
